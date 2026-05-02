@@ -104,6 +104,24 @@ Estimated time: **45 min - 1 hour**.
 
 ### Scenario B — Existing project (brownfield)
 
+⚠ **If your project ALREADY has Claude Code configuration** (e.g. you ran `/init`, or your team has been adding to `CLAUDE.md` for months), the bootstrap will detect this and ask before overwriting. The framework includes mandatory pre-flight safety checks:
+
+- **Pre-flight 1** — auto-snapshot existing config to `.claude-pre-bootstrap-backup/`
+- **Pre-flight 2** — naming-collision check (per file — STOP for explicit user decision)
+- **Pre-flight 3** — `applies_to:` glob conflict check
+- **Pre-flight 4** — drift detection on existing `CLAUDE.md`
+- **Pre-flight 5** — existing agent style detection
+- **Decision gate** — STOP if any pre-flight raised a `<NEEDS USER CONFIRMATION>` flag
+
+You can also do an extra manual snapshot before starting:
+```bash
+mkdir -p .claude-pre-bootstrap-backup
+[ -f CLAUDE.md ] && cp CLAUDE.md .claude-pre-bootstrap-backup/
+[ -d .claude ] && cp -r .claude .claude-pre-bootstrap-backup/
+```
+
+The framework's BOOTSTRAP-PROMPT will repeat the snapshot inside the prompt — this is just belt-and-suspenders.
+
 ```bash
 # 1. Install Claude Code (if not already)
 
@@ -118,21 +136,25 @@ git checkout -b setup/claude-orchestration
 claude
 # Paste: prompts/INVENTORY-PROMPT.md
 # Replace <framework path> with the absolute path to this repo on your machine
+# INVENTORY scans for existing CLAUDE.md, .claude/agents/, .claude/rules/, .claude/skills/
 
 # 5. Review/adjust Claude's proposed inventory + answer Open Questions
 
 # 6. Run the bootstrap pass (creates all framework files)
 # Paste: prompts/BOOTSTRAP-PROMPT.md (in the same Claude Code session)
+# BOOTSTRAP runs pre-flight safety checks BEFORE creating any files
+# If existing config is detected, you'll be asked to confirm per-file decisions
 
 # 7. Verify (in terminal)
 claude agents                  # should list all your project specialists
+[ -f .claude-pre-bootstrap-backup/CLAUDE.md ] && diff .claude-pre-bootstrap-backup/CLAUDE.md CLAUDE.md
 npm run build                  # or whatever your build is — should still pass
 
 # 8. Run a real task via the orchestrator
 claude --agent <project-slug>-orchestrator
 # Give it a real bug or small feature; verify the handoff schema works end-to-end
 
-# 9. Commit and PR
+# 9. Commit and PR (note: .claude-pre-bootstrap-backup/ is gitignored)
 git add .claude/ docs/ai-context/ docs/_archive/ CLAUDE.md .gitignore
 git commit -m "chore: bootstrap Claude Code orchestration framework"
 git push -u origin setup/claude-orchestration

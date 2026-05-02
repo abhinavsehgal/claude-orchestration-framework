@@ -216,3 +216,17 @@ A 2000-line CLAUDE.md means:
 **Right answer:** Refactor a long CLAUDE.md into the framework's tiers. Move per-area gotchas to `.claude/rules/<domain>.md` (with `applies_to` globs). Move orientation to `docs/ai-context/<area>.md`. Move full detail to `docs/<UPPERCASE>.md`. Keep CLAUDE.md as the routing index — golden rules + workflow + tables + cross-links.
 
 We did this on a real codebase. The pre-refactor CLAUDE.md was 2,928 lines. The post-refactor one is ~150. Every existing rule survived; nothing was lost. The routing pattern made it dramatically easier for both Claude and humans to navigate.
+
+## Pitfall 16: Bootstrap on a repo with existing Claude Code config
+
+If you ran `/init` previously, or your team has been adding to `CLAUDE.md` for months, BOOTSTRAP-PROMPT.md must NOT silently overwrite that work.
+
+**Right answer:** the prompt now includes mandatory pre-flight checks at the top — snapshot to `.claude-pre-bootstrap-backup/`, naming-collision detection, `applies_to:` glob conflict detection, drift detection on existing CLAUDE.md, and a decision gate that STOPS if any pre-flight raised a `<NEEDS USER CONFIRMATION>` flag.
+
+**Specific risks:**
+- Existing `CLAUDE.md` with team rules → Pre-flight 4 (drift detection) flags stale content; Step 9 (merge step) shows a 3-pane diff before writing.
+- Existing `.claude/agents/<name>.md` with same name as a proposed specialist → Pre-flight 2 (naming collision check) STOPS for explicit user decision per file.
+- Existing `.claude/rules/` with overlapping `applies_to:` → Pre-flight 3 detects glob overlap; both rule files would be referenced creating contradictory guidance.
+- Existing `.claude/agents/` with personas that overlap proposed specialists → Pre-flight 5 surfaces the parallel system; user decides migrate vs coexist.
+
+**The pre-flight workflow is non-optional** — even on apparent greenfield projects, run it. Cost is 30 seconds; benefit is never silently destroying team work.

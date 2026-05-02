@@ -1,4 +1,4 @@
-# INVENTORY PROMPT
+ # INVENTORY PROMPT
 
 Paste this into Claude Code at the root of the project you want to bootstrap. Adjust `<framework path>` to match your install location.
 
