@@ -213,7 +213,7 @@ Yes. See `docs/02-ARCHITECTURE.md` § "Variations" for monorepo, multi-product, 
 The framework doesn't change Claude Code's data handling. Use Claude Code's `permissions.deny` rules for sensitive paths. See `docs/09-RUNBOOK.md` § "What if I'm worried about leaking sensitive code".
 
 **Q: Can I share this with another engineer who isn't on my team?**
-This repo is private. Add them as a collaborator on GitHub, or zip the folder and email it. The framework itself is free to use — see `LICENSE`.
+This repo is public. The framework is free to use — see `LICENSE`.
 
 ## License
 
