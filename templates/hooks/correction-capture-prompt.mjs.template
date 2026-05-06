@@ -1,0 +1,120 @@
+#!/usr/bin/env node
+// Pattern 2 — Stop hook for correction-capture.
+//
+// Wired in `.claude/settings.json` as:
+//   "Stop": [{
+//     "matcher": "",
+//     "hooks": [{ "type": "command", "command": "node .claude/scripts/correction-capture-prompt.mjs" }]
+//   }]
+//
+// On stop, reads the JSONL transcript, finds the user's most recent message,
+// scans for explicit correction signals. If matched → emits a system-reminder
+// asking the model to draft a one-line `.claude/rules/<file>.md` patch and
+// exit 2 (blocks stop). If no signal → exit 0 (allow stop normally).
+//
+// Conservative on purpose. Better to miss a subtle correction than to fire on
+// every turn. Add new patterns to STRONG_CORRECTION_PATTERNS only after seeing
+// real false negatives (corrections that didn't trigger).
+//
+// === Customization ===
+//   - GOLDEN_RULE_REF — your CLAUDE.md golden-rule number for "corrections become rules"
+//   - STRONG_CORRECTION_PATTERNS — adjust regex set if you see false positives or
+//     consistent false negatives in your domain
+
+import { readFileSync, existsSync } from "node:fs";
+
+const GOLDEN_RULE_REF = "CLAUDE.md golden rule §9";
+
+const STRONG_CORRECTION_PATTERNS = [
+  /\b(that'?s|you'?re|this is)\s+(wrong|incorrect|not\s+right|not\s+correct)\b/i,
+  /\bnot\s+(what|how)\s+I\s+(asked|wanted|said)\b/i,
+  /\byou\s+(forgot|missed|skipped|ignored|already)\b/i,
+  /\b(I|i)\s+(just|already)\s+(told|said|asked)\s+you\b/i,
+  /\b(I|i)\s+told\s+you\s+(not\s+to|to\s+not)\b/i,
+  /\b(stop|don'?t)\s+(doing|using|writing|making|creating)\b/i,
+  /\bwhy\s+did\s+you\s+(use|do|write|make|create)\b/i,
+  /\bagain\?\s*$/i,
+  /\bnope\b/i,
+  /^\s*(no[,.!]|wrong[,.!]|incorrect[,.!])/i,
+  /\binstead\s+of\s+(\w+\s+){0,4}use\b/i,
+  /\byou\s+keep\s+(doing|using|writing|making)\b/i,
+  /\byou\s+always\s+(do|use|write|make)\b/i,
+];
+
+function readStdin() {
+  try { return readFileSync(0, "utf-8"); } catch { return ""; }
+}
+
+function parsePayload(s) {
+  if (!s) return {};
+  try { return JSON.parse(s); } catch { return {}; }
+}
+
+function lastUserText(transcriptPath) {
+  if (!transcriptPath || !existsSync(transcriptPath)) return null;
+  let raw;
+  try { raw = readFileSync(transcriptPath, "utf-8"); } catch { return null; }
+  const lines = raw.split("\n").filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    let entry;
+    try { entry = JSON.parse(lines[i]); } catch { continue; }
+    const m = entry?.message ?? entry;
+    const role = m?.role ?? entry?.type ?? entry?.role;
+    if (role !== "user") continue;
+    const content = m?.content ?? entry?.content;
+    if (typeof content === "string") return content;
+    if (Array.isArray(content)) {
+      const text = content
+        .filter((c) => c && (c.type === "text" || typeof c === "string"))
+        .map((c) => (typeof c === "string" ? c : c.text ?? ""))
+        .join("\n")
+        .trim();
+      if (text) return text;
+    }
+  }
+  return null;
+}
+
+function looksLikeToolResult(text) {
+  if (!text) return false;
+  return text.startsWith("<tool_use_result") || text.startsWith("<system-reminder>");
+}
+
+function detectCorrection(text) {
+  if (!text || looksLikeToolResult(text)) return false;
+  return STRONG_CORRECTION_PATTERNS.some((re) => re.test(text));
+}
+
+function main() {
+  const payload = parsePayload(readStdin());
+
+  // Loop guard: if a previous Stop hook already fired this stop cycle, allow.
+  if (payload.stop_hook_active === true) process.exit(0);
+
+  const text = lastUserText(payload.transcript_path);
+  if (!detectCorrection(text)) process.exit(0);
+
+  const reminder = [
+    "<system-reminder>",
+    `**${GOLDEN_RULE_REF} — correction detected.**`,
+    "",
+    "The user's most recent message contains a strong correction signal.",
+    "Before stopping, decide:",
+    "",
+    "1. Was this a correction on a *recurring* domain pattern (not a one-off typo or context-specific request)?",
+    "2. If yes — the lesson must harden into `.claude/rules/<file>.md`. Draft a one-line patch now under the right `Hard rules` or `What NOT to do` section, name the exact file, and ask the user for approval before stopping.",
+    "3. If it was a one-off — acknowledge briefly and stop normally.",
+    "",
+    "Do NOT say \"I'll remember.\" Memory is not a substitute for a rule.",
+    "</system-reminder>",
+    "",
+  ].join("\n");
+
+  process.stdout.write(reminder);
+  process.exit(2);
+}
+
+try { main(); } catch (e) {
+  process.stderr.write(`[correction-capture-prompt] ${e?.message ?? e}\n`);
+  process.exit(0);
+}

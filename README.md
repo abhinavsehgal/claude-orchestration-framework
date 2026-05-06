@@ -1,5 +1,7 @@
 # Claude Orchestration Framework
 
+> **Version 1.1.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack agnostic
+>
 > **Purpose.** A reusable multi-agent orchestration setup for [Claude Code](https://docs.claude.com/en/docs/claude-code) that prevents cascading hallucinations, enforces evidence-based handoffs between agents, and makes Claude usable on production codebases by teams. Tech-stack agnostic — drops into any project (web, mobile, backend, ML, infra) in 2-4 hours.
 
 ---
@@ -32,7 +34,7 @@ claude-orchestration-framework/
 ├── Claude-Orchestration-Framework.pdf  ← consolidated 57-page printable
 ├── LICENSE
 │
-├── docs/                                ← the framework explained (9 chapters)
+├── docs/                                ← the framework explained (10 chapters)
 │   ├── 01-PRINCIPLES.md                 ← seven core principles
 │   ├── 02-ARCHITECTURE.md               ← .claude/ + docs/ layout (with monorepo / mobile+web / multi-product variants)
 │   ├── 03-AGENTS-GUIDE.md               ← how to design orchestrator + specialists (per-stack tables)
@@ -40,8 +42,9 @@ claude-orchestration-framework/
 │   ├── 05-RULES-AND-SKILLS.md           ← path-globbed rules + repeatable workflows
 │   ├── 06-INVOCATION-MODES.md           ← claude vs --agent vs specialist mode
 │   ├── 07-FOLDER-STRUCTURE.md           ← three-tier doc organization
-│   ├── 08-COMMON-PITFALLS.md            ← 15 hard-won lessons
-│   └── 09-RUNBOOK.md                    ← step-by-step bootstrap (~2-4 hours)
+│   ├── 08-COMMON-PITFALLS.md            ← 17 hard-won lessons
+│   ├── 09-RUNBOOK.md                    ← step-by-step bootstrap (~2-4 hours)
+│   └── 10-HOOK-HARDENING.md             ← (v1.1) optional hook-based enforcement when documentation discipline isn't enough
 │
 ├── prompts/                             ← ready-to-paste prompts for Claude Code
 │   ├── INVENTORY-PROMPT.md              ← scan + propose specialists (run first)
@@ -57,7 +60,15 @@ claude-orchestration-framework/
     ├── SPOONFEEDER.md.template
     ├── rule.md.template
     ├── skill.md.template
-    └── archive-README.md.template
+    ├── archive-README.md.template
+    ├── slash-command.md.template        ← (v1.1) /<command>-style slash command
+    └── hooks/                            ← (v1.1) optional hook-based hardening
+        ├── surface-matching-rules.mjs.template      ← Pattern 1: PreToolUse rule-surfacing
+        ├── correction-capture-prompt.mjs.template   ← Pattern 2: Stop correction-capture
+        ├── build-gate.mjs.template                  ← Pattern 3: Stop build-gate
+        ├── lint-fix.mjs.template                    ← Pattern 4: PostToolUse lint-fix
+        ├── settings.json.snippet                    ← sample wiring for all four
+        └── HOOKS.md.template                        ← orientation note for docs/ai-context/HOOKS.md
 ```
 
 ---
@@ -181,7 +192,7 @@ No other dependencies. The framework is markdown + Claude Code's built-in subage
 
 ## What this framework does NOT include
 
-- **Runtime hooks.** Documentation enforcement covers ~95% of value at 5% of complexity. Hooks are added later (per `docs/08-COMMON-PITFALLS.md` recommendations) IF documentation enforcement demonstrably fails.
+- **Runtime hooks** (in the default install). Documentation enforcement covers ~95% of value at 5% of complexity. **As of v1.1**, optional hook-hardening templates ship at `templates/hooks/` for projects where documentation discipline has demonstrably failed — see `docs/10-HOOK-HARDENING.md` for when and how to add them.
 - **Code generation.** This is purely a documentation + agent-config framework. Your application code stays untouched.
 - **Vendor lock-in.** No external services, no SaaS, no API keys. Just markdown.
 - **Project-specific specialists.** The templates have placeholders. You customize per project.

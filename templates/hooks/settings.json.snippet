@@ -1,0 +1,42 @@
+{
+  "_comment": "Sample wiring for all four hook patterns. Merge into .claude/settings.json (the team-shared file, NOT settings.local.json). Stop array order matters — correction-capture before build-gate so the lighter check runs first.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/scripts/surface-matching-rules.mjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/scripts/lint-fix.mjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/scripts/correction-capture-prompt.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/scripts/build-gate.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

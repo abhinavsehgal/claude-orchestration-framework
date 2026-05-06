@@ -1,0 +1,82 @@
+# Claude Code Hooks — <PROJECT_NAME>
+
+Mechanical scaffolding around the rules system. Each hook closes a documented recurring failure mode by turning honor-system instructions into deterministic enforcement. Patterned after the principle that *"with scaffolding you can get deterministic outcomes"*.
+
+All hooks live in `.claude/settings.json` (team-shared, checked in). Per-machine permission allowlists stay in `.claude/settings.local.json` (gitignored). Scripts live in `.claude/scripts/`.
+
+## Active hooks
+
+### `PreToolUse` on `Write|Edit|MultiEdit` → `surface-matching-rules.mjs`
+
+**Closes:** the gap on "before editing any file, check whether its path matches a `.claude/rules/*.md` glob frontmatter." This is procedural and skipped under time pressure.
+
+**Behaviour:** reads tool input from stdin, brace-expands rule globs, matches the path, and emits matching rule bodies as a `<system-reminder>` before the edit fires. Caps each rule body at 12 KB and total at 40 KB. Fail-silent.
+
+**Test:**
+```bash
+echo '{"tool_name":"Edit","tool_input":{"file_path":"<rule-matching-path>"}}' \
+  | node .claude/scripts/surface-matching-rules.mjs
+```
+
+**Rollback:** delete the `PreToolUse` stanza from `.claude/settings.json`.
+
+### `PostToolUse` on `Write|Edit|MultiEdit` → `lint-fix.mjs`
+
+**Closes:** the "last 10% formatting drift to CI" gap. Runs the project's auto-fix linter on the file just touched.
+
+**Behaviour:** skips silently for non-lintable extensions, files in `node_modules/` / `.next/` / `.git/`, and when the linter dependency isn't installed. Always exits 0.
+
+**Rollback:** delete the `PostToolUse` stanza from `.claude/settings.json`.
+
+### `Stop` → `correction-capture-prompt.mjs`
+
+**Closes:** the gap where user corrections die in conversation instead of becoming permanent rules.
+
+**Behaviour:** reads the JSONL transcript, finds the most recent user message, scans for explicit correction signals. On match → emits a `<system-reminder>` blocking the stop and asking the model to draft a `.claude/rules/<file>.md` patch. Loop guard via `stop_hook_active`.
+
+**False-positive defence:** patterns require explicit negative-feedback wording. Benign additions and questions don't fire.
+
+**Test:**
+```bash
+printf '%s\n' \
+  '{"type":"user","message":{"role":"user","content":"That'"'"'s wrong, you used X again"}}' \
+  > /tmp/cc-test.jsonl
+echo '{"transcript_path":"/tmp/cc-test.jsonl","stop_hook_active":false}' \
+  | node .claude/scripts/correction-capture-prompt.mjs
+echo "EXIT=$?"  # should print EXIT=2
+```
+
+**Rollback:** delete the relevant entry from the `Stop` array in `.claude/settings.json`.
+
+### `Stop` → `build-gate.mjs`
+
+**Closes:** the gap on "run the build before commit." The hook runs the build only if any build-relevant file is dirty (avoids slow builds on documentation-only turns).
+
+**Behaviour:** reads `git status --porcelain`, filters by stack-specific regex, runs the build if anything matches. Non-zero exit → emits build error tail and exits 2 (blocks stop). Loop guard via `stop_hook_active`.
+
+**Rollback:** delete the relevant entry from the `Stop` array in `.claude/settings.json` (leave `correction-capture-prompt.mjs` if it's also there).
+
+## Why hooks live in team-shared `settings.json` (not `settings.local.json`)
+
+`settings.json` is checked into git → every contributor and CI run gets the same enforcement. `settings.local.json` is per-machine (gitignored). A rule-enforcement hook that only fires on one developer's machine is theatre.
+
+## Adding a new hook
+
+1. Write the script in `.claude/scripts/<name>.mjs`. Use Node ESM (`.mjs`). **Fail silent** — never block a tool call due to a hook bug.
+2. Test with a real payload:
+   ```bash
+   echo '<JSON-payload>' | node .claude/scripts/<name>.mjs
+   ```
+3. Add the matcher + command to `.claude/settings.json` under the appropriate hook event.
+4. Document the failure mode it closes here.
+5. Add a rollback line.
+
+## Verifying hooks are live
+
+`.claude/settings.json` is loaded **at session start**. Adding hooks mid-session does NOT activate them in the current session. After installing a new hook: `/exit` and start a fresh `claude` session, then verify by editing a file that should trigger the hook. The system-reminder should appear before the tool call fires.
+
+## Cross-links
+
+- Root `CLAUDE.md` — golden rules, mandatory workflow.
+- `.claude/rules/*.md` — the rule files Pattern 1 surfaces.
+- `docs/ai-context/INDEX.md` — adds a pointer to this file.

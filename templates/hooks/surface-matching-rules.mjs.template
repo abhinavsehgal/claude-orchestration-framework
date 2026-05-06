@@ -1,0 +1,186 @@
+#!/usr/bin/env node
+// Pattern 1 — PreToolUse rule-surfacing hook.
+//
+// Wired in `.claude/settings.json` as:
+//   "PreToolUse": [{
+//     "matcher": "Write|Edit|MultiEdit",
+//     "hooks": [{ "type": "command", "command": "node .claude/scripts/surface-matching-rules.mjs" }]
+//   }]
+//
+// On every Write|Edit|MultiEdit, reads the `applies_to:` glob frontmatter of
+// every `.claude/rules/*.md`, matches the path being edited, and emits the
+// matching rule bodies to stdout. Claude Code injects stdout as a
+// <system-reminder> into model context BEFORE the edit fires.
+//
+// Fail-silent: any error → exit 0 with no output. The edit proceeds normally.
+//
+// === Customization ===
+// Most projects don't need to edit this file. Customize via:
+//   - .claude/rules/*.md `applies_to:` globs (script discovers them)
+//   - MAX_BODY_CHARS / MAX_TOTAL_CHARS below if your rules are unusually large
+//   - GOLDEN_RULE_REF below if your CLAUDE.md numbers golden rules differently
+
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(SCRIPT_DIR, "..", "..");
+const RULES_DIR = join(REPO_ROOT, ".claude", "rules");
+
+// Tune these if your rules are unusually large or you want tighter context budgets.
+const MAX_BODY_CHARS = 12000;
+const MAX_TOTAL_CHARS = 40000;
+
+// Update this if your CLAUDE.md numbers the "read matching rule before edit" golden rule
+// at something other than §7. Used only in the system-reminder header.
+const GOLDEN_RULE_REF = "CLAUDE.md golden rule §7";
+
+function readStdin() {
+  try { return readFileSync(0, "utf-8"); } catch { return ""; }
+}
+
+function extractFilePath(payloadStr) {
+  if (!payloadStr) return null;
+  try {
+    const data = JSON.parse(payloadStr);
+    const ti = data.tool_input ?? data.toolInput ?? data.input ?? {};
+    return ti.file_path ?? ti.filePath ?? ti.path ?? null;
+  } catch { return null; }
+}
+
+// Brace expansion: "src/{a,b,c}/x" → ["src/a/x", "src/b/x", "src/c/x"]
+function expandBraces(pattern) {
+  const m = pattern.match(/\{([^{}]+)\}/);
+  if (!m) return [pattern];
+  const [whole, inner] = m;
+  const alts = inner.split(",").map((a) => a.trim());
+  return alts.flatMap((a) => expandBraces(pattern.replace(whole, a)));
+}
+
+function globToRegExp(glob) {
+  let re = "";
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === "*") {
+      if (glob[i + 1] === "*") {
+        re += ".*";
+        i += 1;
+        if (glob[i + 1] === "/") i += 1;
+      } else {
+        re += "[^/]*";
+      }
+    } else if (c === "?") {
+      re += "[^/]";
+    } else if (".+^$|()[]\\".includes(c)) {
+      re += "\\" + c;
+    } else {
+      re += c;
+    }
+  }
+  return new RegExp("^" + re + "$");
+}
+
+function matchesGlob(pattern, path) {
+  return expandBraces(pattern).some((p) => globToRegExp(p).test(path));
+}
+
+function parseFrontmatter(content) {
+  const m = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!m) return { meta: {}, body: content };
+  const meta = {};
+  let arrayKey = null;
+  for (const rawLine of m[1].split("\n")) {
+    const line = rawLine.replace(/\r$/, "");
+    if (!line.trim()) continue;
+    const arrayItem = line.match(/^\s+-\s+(.+?)\s*$/);
+    if (arrayItem && arrayKey) {
+      const v = arrayItem[1].replace(/^['"]|['"]$/g, "");
+      meta[arrayKey].push(v);
+      continue;
+    }
+    const kvEmpty = line.match(/^([\w_]+):\s*$/);
+    if (kvEmpty) {
+      arrayKey = kvEmpty[1];
+      meta[arrayKey] = [];
+      continue;
+    }
+    const kv = line.match(/^([\w_]+):\s+(.+?)\s*$/);
+    if (kv) {
+      meta[kv[1]] = kv[2].replace(/^['"]|['"]$/g, "");
+      arrayKey = null;
+    }
+  }
+  return { meta, body: m[2] };
+}
+
+function main() {
+  const stdin = readStdin();
+  const filePath = extractFilePath(stdin) ?? process.argv[2];
+  if (!filePath) process.exit(0);
+
+  let rel;
+  try {
+    const abs = resolve(REPO_ROOT, filePath);
+    rel = relative(REPO_ROOT, abs);
+  } catch { process.exit(0); }
+
+  if (!rel || rel.startsWith("..")) process.exit(0);
+  if (!existsSync(RULES_DIR)) process.exit(0);
+
+  let ruleFiles;
+  try {
+    ruleFiles = readdirSync(RULES_DIR).filter((f) => f.endsWith(".md")).sort();
+  } catch { process.exit(0); }
+
+  const matches = [];
+  for (const f of ruleFiles) {
+    let content;
+    try { content = readFileSync(join(RULES_DIR, f), "utf-8"); } catch { continue; }
+    const { meta, body } = parseFrontmatter(content);
+    const globs = Array.isArray(meta.applies_to) ? meta.applies_to : [];
+    if (globs.length === 0) continue;
+    if (globs.some((g) => matchesGlob(g, rel))) {
+      matches.push({ file: f, name: meta.name ?? f, body: body.trim() });
+    }
+  }
+
+  if (matches.length === 0) process.exit(0);
+
+  let totalLen = 0;
+  const sections = [];
+  for (const m of matches) {
+    if (totalLen >= MAX_TOTAL_CHARS) {
+      sections.push(`\n_(Additional matching rule files were truncated: ${matches.length - sections.length} more)_`);
+      break;
+    }
+    const remaining = MAX_TOTAL_CHARS - totalLen;
+    const cap = Math.min(MAX_BODY_CHARS, remaining);
+    const body = m.body.length > cap
+      ? m.body.slice(0, cap) + "\n\n_(rule body truncated — read full file before editing)_"
+      : m.body;
+    sections.push(`## .claude/rules/${m.file}\n\n${body}`);
+    totalLen += body.length;
+  }
+
+  const ruleList = matches.map((m) => `\`.claude/rules/${m.file}\``).join(", ");
+  process.stdout.write(
+    [
+      "<system-reminder>",
+      `**${GOLDEN_RULE_REF} — auto-surfaced rule(s) for \`${rel}\`.**`,
+      "",
+      `This edit triggers ${matches.length} matching rule file(s): ${ruleList}.`,
+      "Re-read the relevant Hard rules below before proceeding. Cite which rule files you applied in your task summary.",
+      "",
+      sections.join("\n\n"),
+      "</system-reminder>",
+      "",
+    ].join("\n"),
+  );
+  process.exit(0);
+}
+
+try { main(); } catch (e) {
+  process.stderr.write(`[surface-matching-rules] ${e?.message ?? e}\n`);
+  process.exit(0);
+}

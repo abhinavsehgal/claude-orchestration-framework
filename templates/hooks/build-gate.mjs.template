@@ -1,0 +1,135 @@
+#!/usr/bin/env node
+// Pattern 3 — Stop hook for build-gate.
+//
+// Wired in `.claude/settings.json` as:
+//   "Stop": [{
+//     "matcher": "",
+//     "hooks": [{ "type": "command", "command": "node .claude/scripts/build-gate.mjs" }]
+//   }]
+//
+// On stop, checks `git status --porcelain` for dirty files matching
+// BUILD_RELEVANT_RE. If any are dirty, runs BUILD_COMMAND. On non-zero exit,
+// emits the build error tail to stdout and exits 2 (blocks stop). If build
+// passes or no relevant files are dirty, exits 0.
+//
+// === Customization (REQUIRED) ===
+// Edit the constants below to match your stack:
+//   - BUILD_RELEVANT_RE: regex matching paths whose dirtiness should trigger a build
+//   - BUILD_COMMAND: the command to run (e.g. ["npm","run","build","--silent"], ["pytest"], ["go","build","./..."])
+//   - DEPS_SENTINEL: a path that proves dependencies are installed; if missing, hook silently skips
+//                    (avoids spurious failures in fresh worktrees that haven't run install)
+//   - GOLDEN_RULE_REF: your CLAUDE.md golden-rule number for "build before commit"
+//   - BUILD_TIMEOUT_MS: cap on the build (default 5min)
+//
+// Examples:
+//   Next.js / TS:
+//     BUILD_RELEVANT_RE = /^src\/.+\.(ts|tsx|js|jsx)$|^(next\.config\.(ts|js|mjs|cjs)|tsconfig.*\.json)$/
+//     BUILD_COMMAND = ["npm", "run", "build", "--silent"]
+//     DEPS_SENTINEL = "node_modules/next"
+//
+//   Python / pytest:
+//     BUILD_RELEVANT_RE = /^(src|app)\/.+\.py$|^pyproject\.toml$/
+//     BUILD_COMMAND = ["pytest", "-x", "--no-header", "-q"]
+//     DEPS_SENTINEL = ".venv/bin/python"
+//
+//   Go:
+//     BUILD_RELEVANT_RE = /\.go$|^go\.(mod|sum)$/
+//     BUILD_COMMAND = ["go", "build", "./..."]
+//     DEPS_SENTINEL = "go.sum"
+
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(SCRIPT_DIR, "..", "..");
+
+// EDIT THESE for your stack:
+const BUILD_RELEVANT_RE = /^src\/.+\.(ts|tsx|js|jsx)$|^(next\.config\.(ts|js|mjs|cjs)|tsconfig(\..+)?\.json|tailwind\.config\.(ts|js|mjs|cjs))$/;
+const BUILD_COMMAND = ["npm", "run", "build", "--silent"];
+const DEPS_SENTINEL = "node_modules/next";  // path under REPO_ROOT
+const GOLDEN_RULE_REF = "CLAUDE.md golden rule §2";
+const BUILD_TIMEOUT_MS = 5 * 60 * 1000;
+const MAX_OUTPUT_CHARS = 6000;
+
+function readStdin() {
+  try { return readFileSync(0, "utf-8"); } catch { return ""; }
+}
+
+function dirtyRelevantFiles() {
+  const r = spawnSync("git", ["status", "--porcelain"], {
+    cwd: REPO_ROOT, encoding: "utf-8",
+  });
+  if (r.status !== 0) return [];
+  const lines = (r.stdout ?? "").split("\n").filter(Boolean);
+  const files = [];
+  for (const line of lines) {
+    const path = line.slice(3).trim().split(" -> ").pop();
+    if (BUILD_RELEVANT_RE.test(path)) files.push(path);
+  }
+  return files;
+}
+
+function depsInstalled() {
+  return existsSync(join(REPO_ROOT, DEPS_SENTINEL));
+}
+
+function runBuild() {
+  const r = spawnSync(BUILD_COMMAND[0], BUILD_COMMAND.slice(1), {
+    cwd: REPO_ROOT,
+    encoding: "utf-8",
+    env: { ...process.env, CI: "1", NEXT_TELEMETRY_DISABLED: "1" },
+    timeout: BUILD_TIMEOUT_MS,
+  });
+  return {
+    code: r.status ?? 1,
+    stdout: r.stdout ?? "",
+    stderr: r.stderr ?? "",
+  };
+}
+
+function tail(s, n) {
+  if (s.length <= n) return s;
+  return "…(truncated head)\n" + s.slice(-n);
+}
+
+function main() {
+  // Loop guard: don't run build twice in the same stop cycle.
+  const payload = (() => { try { return JSON.parse(readStdin()); } catch { return {}; } })();
+  if (payload.stop_hook_active === true) process.exit(0);
+
+  if (!depsInstalled()) process.exit(0);
+
+  const dirty = dirtyRelevantFiles();
+  if (dirty.length === 0) process.exit(0);
+
+  const result = runBuild();
+  if (result.code === 0) process.exit(0);
+
+  const out = (result.stderr || result.stdout).trim();
+  process.stdout.write(
+    [
+      "<system-reminder>",
+      `**${GOLDEN_RULE_REF} — \`${BUILD_COMMAND.join(" ")}\` failed.**`,
+      "",
+      `${dirty.length} dirty build-relevant file(s) at stop time, including: ${dirty.slice(0, 8).map((f) => `\`${f}\``).join(", ")}${dirty.length > 8 ? "…" : ""}.`,
+      "",
+      "Build output (tail):",
+      "",
+      "```",
+      tail(out, MAX_OUTPUT_CHARS),
+      "```",
+      "",
+      "Fix the build before stopping. If the failure is unrelated to your changes, commit only after the build is green or get explicit user approval to skip.",
+      "</system-reminder>",
+      "",
+    ].join("\n"),
+  );
+  process.exit(2);
+}
+
+try { main(); } catch (e) {
+  process.stderr.write(`[build-gate] ${e?.message ?? e}\n`);
+  process.exit(0);
+}

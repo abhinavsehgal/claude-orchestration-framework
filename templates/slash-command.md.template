@@ -1,0 +1,115 @@
+---
+description: <ONE_SENTENCE_DESCRIPTION_OF_THE_COMMAND — appears in /help and the command picker>
+allowed-tools: Bash, Read, Edit
+argument-hint: <[OPTIONAL_HINT_FOR_USER_INPUT]>
+---
+
+# /<COMMAND_NAME>
+
+> **What this is.** A slash command at `.claude/commands/<COMMAND_NAME>.md`. Invoked by typing `/<COMMAND_NAME>` in Claude Code. The command's body is treated as a prompt; pre-flight inline-bash (`!\`...\``) executes BEFORE the prompt runs and its output becomes context.
+>
+> **Why slash commands matter.** They turn repeated multi-step workflows into single keystrokes. The pre-flight pattern (inline bash that pre-computes context) avoids back-and-forth tool calls within the command, dramatically reducing latency.
+
+Pre-flight context (auto-collected; the values below are interpolated before the prompt body runs):
+
+- **<CONTEXT_LABEL_1>:** !`<BASH_COMMAND_1>`
+- **<CONTEXT_LABEL_2>:** !`<BASH_COMMAND_2>`
+- **<CONTEXT_LABEL_3>:** !`<BASH_COMMAND_3>`
+- **<CONTEXT_LABEL_4>:** !`<BASH_COMMAND_4>`
+
+User-provided argument (may be empty): $ARGUMENTS
+
+---
+
+## Workflow — strict, sequential. STOP at any failure.
+
+### Step 1 — <PRE-CONDITION_CHECK_NAME>
+
+- <PRE_CONDITION_CHECK_DESCRIPTION>
+- If the check fails → REFUSE with a clear message naming the failed condition.
+- Otherwise → proceed to Step 2.
+
+### Step 2 — <NEXT_STEP>
+
+<2-4 SENTENCES — what to do, what to verify, what to produce>
+
+### Step 3 — <NEXT_STEP>
+
+<...>
+
+(Aim for 5-10 steps. Mirror Boris Cherny's `/commit-push-pr` pattern: use the pre-flight context heavily, walk visibly through each step, name each check explicitly so the user can interrupt cleanly.)
+
+### Step N — Final report
+
+Print a compact summary of what was done:
+
+```
+✓ <STEP_1_LABEL>: <RESULT>
+✓ <STEP_2_LABEL>: <RESULT>
+...
+```
+
+---
+
+## Hard NOs
+
+- **NEVER** <DANGEROUS_OPERATION_1 — e.g. push to main, force-push, --no-verify>
+- **NEVER** <DANGEROUS_OPERATION_2>
+- **NEVER** <DANGEROUS_OPERATION_3>
+
+These hard NOs encode the project's golden rules at the slash-command boundary. If the user explicitly requests one of them, refuse and ask them to do it manually.
+
+---
+
+## Notes for the command author
+
+(Delete this section before committing.)
+
+A good slash command:
+- Is for a workflow you do **at least once a day** (otherwise the upfront design cost doesn't pay back)
+- Pre-computes context via inline bash (saves 3-5 tool-call round-trips)
+- Has hard NOs that match the project's golden rules
+- Names each step explicitly so the user can interrupt at any point
+- Never destructively modifies state without explicit per-call confirmation
+- Never bypasses safety hooks (it doesn't override `Stop` hooks etc.)
+
+A bad slash command:
+- Wraps a one-step workflow (just type the bash command directly)
+- Reads contextual state inside the prompt body (slow — use pre-flight bash)
+- Auto-confirms destructive operations
+- Re-implements features Claude Code already has
+- Has no hard NOs and trusts the user to remember the golden rules
+
+### Worked example: `/commit-push-pr`
+
+The reference implementation is the `/commit-push-pr` workflow from Boris Cherny's setup, codified for any project's golden rules:
+
+```yaml
+---
+description: Validate → commit → push → open/update PR against develop. Enforces golden rules §1 (no main pushes) and §2 (build before commit).
+allowed-tools: Bash, Read, Edit
+argument-hint: [optional commit summary override]
+---
+```
+
+Pre-flight context: current branch, working tree status, diff stat against develop, build-relevant files dirty list, existing PR JSON, recent commits, develop's recent commit style. (~7 inline bash invocations.)
+
+Workflow:
+1. Branch safety (refuse main/master/develop)
+2. Build gate (skip if no build-relevant files dirty; else run build)
+3. Diff review (cross-check that PreToolUse rule-surfacing already ran)
+4. Selective staging (NEVER `git add -A`; deny `.env*`, secrets)
+5. Conventional Commit message with project trailer
+6. Push without `--force` / `--no-verify`
+7. Open or update PR against develop via `gh pr create`
+8. Compact final report
+
+Hard NOs: never push to main/master/develop, never force-push, never amend (always create new commit), never stage secrets, never auto-merge.
+
+---
+
+## Cross-links
+
+- `docs/10-HOOK-HARDENING.md` — the broader hook automation context
+- `docs/05-RULES-AND-SKILLS.md` § Skills — for multi-step workflows that don't fit a slash command
+- `.claude/settings.json` — where hook entries live alongside slash commands

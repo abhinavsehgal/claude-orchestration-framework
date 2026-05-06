@@ -1,6 +1,6 @@
 # 08 — Common Pitfalls
 
-Hard-won lessons from real-world adoption. Read this before bootstrapping a project.
+Seventeen hard-won lessons from real-world adoption. Read this before bootstrapping a project.
 
 ## Pitfall 1: Making the orchestrator the project default
 
@@ -230,3 +230,19 @@ If you ran `/init` previously, or your team has been adding to `CLAUDE.md` for m
 - Existing `.claude/agents/` with personas that overlap proposed specialists → Pre-flight 5 surfaces the parallel system; user decides migrate vs coexist.
 
 **The pre-flight workflow is non-optional** — even on apparent greenfield projects, run it. Cost is 30 seconds; benefit is never silently destroying team work.
+
+## Pitfall 17: Hooks installed mid-session don't activate until the next session
+
+When you add hook entries to `.claude/settings.json` (per `docs/10-HOOK-HARDENING.md`), the running Claude Code session does **not** pick them up. `settings.json` is loaded once at session start.
+
+This is the single most surprising property of hook deployment. We watched a session install a `PreToolUse` rule-surfacing hook, manually verify the script worked end-to-end with synthetic stdin, then edit a file matching a rule glob — and the hook didn't fire. The hooks were correctly written and wired; they just weren't loaded.
+
+**Right answer:**
+1. After installing hooks, **end the current session** (`/exit` or close the tab).
+2. Start a fresh Claude Code session.
+3. Verify the hook fires by intentionally triggering it (e.g. edit a file matching a rule glob and look for the `<system-reminder>` block in context).
+4. Only declare the hook deployed after a fresh-session smoke test passes.
+
+If you're shipping hooks in a PR, write the verification recipe into the PR description so reviewers don't have to re-derive it. The `templates/hooks/HOOKS.md.template` includes a "Verifying hooks are live" section that's safe to copy to your project's `docs/ai-context/HOOKS.md`.
+
+A side effect of this: never auto-merge a PR that adds hooks. The author should restart their session and verify before approving.
