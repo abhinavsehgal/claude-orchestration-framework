@@ -1,6 +1,8 @@
 # Claude Orchestration Framework
 
-> **Version 1.1.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack agnostic
+> **Version 1.1.2** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack agnostic
+>
+> ⚠ **Adopters of v1.1.0 should upgrade to v1.1.2.** v1.1.0 had a silent delivery failure in `templates/hooks/correction-capture-prompt.mjs.template` and `templates/hooks/build-gate.mjs.template` — Stop hook reminders were written to stdout, but Claude Code only surfaces stderr from Stop hooks. v1.1.2 fixes the IO channel. See [CHANGELOG.md](CHANGELOG.md#112--2026-05-06).
 >
 > **Purpose.** A reusable multi-agent orchestration setup for [Claude Code](https://docs.claude.com/en/docs/claude-code) that prevents cascading hallucinations, enforces evidence-based handoffs between agents, and makes Claude usable on production codebases by teams. Tech-stack agnostic — drops into any project (web, mobile, backend, ML, infra) in 2-4 hours.
 

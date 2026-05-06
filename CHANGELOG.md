@@ -2,11 +2,33 @@
 
 All notable changes to the Claude Orchestration Framework. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.2] — 2026-05-06
+
+### Fixed (P0 — silent delivery failure)
+
+- **`templates/hooks/correction-capture-prompt.mjs.template`** — the `<system-reminder>` reminder is now written to **stderr**, not stdout. Verified empirically that Claude Code Stop hooks surface stderr verbatim into next-turn context (as `Stop hook feedback:\n[node ...]: <stderr>` blocks) but capture-and-discard stdout. v1.1.0 and v1.1.1 wrote to stdout, so the reminder was correctly produced + exit code was correct, but the model never saw it. **Adopters of v1.1.0 or v1.1.1 must upgrade.**
+- **`templates/hooks/build-gate.mjs.template`** — same fix for the build-failure reminder.
+- **`templates/hooks/HOOKS.md.template`** — added "Stop-hook IO contract" section documenting the stdout/stderr split and how it differs between hook events. Recommends using stderr for Stop hooks, stdout for PreToolUse hooks.
+
+### Added
+
+- **`docs/10-HOOK-HARDENING.md` Rule 6 — "Stop hooks deliver via stderr, PreToolUse via stdout."** New design rule documenting the IO contract finding so future contributors don't make the same mistake. Includes the table of which channel surfaces for each hook event.
+
+### Why this is a hotfix release
+
+The bug was a synthetic-test blind spot: the harness verified `script returns exit 2 with the right content` (which v1.1.0 + v1.1.1 did correctly), but couldn't observe whether the content actually reached the model in real Claude Code. Only live integration testing surfaced it. The lesson is now Rule 6 in the chapter.
+
+### Note on v1.1.1
+
+There was no public v1.1.1 release — only an internal iteration on Glow Grades that found and fixed the v1.1.0 self-contamination + recall bugs. v1.1.2 incorporates both v1.1.1 changes AND the stderr-channel fix in a single tag.
+
+---
+
 ## [1.1.0] — 2026-05-06
 
 ### Added — optional hook-based hardening
 
-- **`docs/10-HOOK-HARDENING.md`** — new chapter explaining when documentation discipline isn't enough and how to add mechanical enforcement. Covers the four hook patterns by leverage, six design rules every hook must follow, the verification recipe (and why it must run in a fresh session), and when to remove hooks again.
+- **`docs/10-HOOK-HARDENING.md`** — new chapter explaining when documentation discipline isn't enough and how to add mechanical enforcement. Covers the four hook patterns by leverage, eight design rules every hook must follow, the verification recipe (and why it must run in a fresh session), and when to remove hooks again.
 - **`templates/hooks/`** — drop-in generic templates for the four patterns:
   - `surface-matching-rules.mjs.template` — Pattern 1: `PreToolUse` rule-surfacing. Auto-injects matching `.claude/rules/*.md` content as a `<system-reminder>` before any `Write|Edit|MultiEdit`. Stack-agnostic.
   - `correction-capture-prompt.mjs.template` — Pattern 2: `Stop` correction-capture. Detects strong correction signals in the user's most recent message and blocks the stop until the model proposes a `.claude/rules/<file>.md` patch. Stack-agnostic.

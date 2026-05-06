@@ -105,11 +105,30 @@ Hook stdout becomes part of the model's context. A 32 KB rule file dumped twice 
 
 If you have two `Stop` hooks (e.g. correction-capture + build-gate), order them with the lighter / more-likely-to-fire one first. The first hook to exit 2 wins; the second never runs in that cycle. Putting build-gate (slow) first means correction-capture only runs on green builds.
 
-### Rule 6 — Settings.json is loaded once at session start
+### Rule 6 — Stop hooks deliver via stderr, PreToolUse via stdout
+
+Verified empirically against live Claude Code v2.x:
+
+| Hook event | stdout surfaces? | stderr surfaces? |
+|---|---|---|
+| `PreToolUse` | **Yes** — injected as additional context before the tool runs | yes |
+| `PostToolUse` | (limited; not used for context injection in practice) | yes (for debug) |
+| `Stop` | **No** — captured but not visible to the model | **Yes** — surfaced verbatim as `Stop hook feedback:\n[node ...]: <stderr>` block in next turn |
+
+If you copy a `PreToolUse` pattern (write to stdout, exit 2) into a `Stop` hook, the model will NEVER see your reminder. We hit this exact bug shipping v1.1.1 of `correction-capture-prompt.mjs` — detection logic worked perfectly, exit code was 2, but the §9 reminder went to stdout and was discarded. The fix was a one-line change to `process.stderr.write(reminder)`.
+
+**The cost of getting this wrong is silent delivery failure**, which is invisible to synthetic harnesses (the script returns the right exit code with the right content; the bug is in the harness contract, not the script). Only live integration testing in real Claude Code catches it.
+
+When writing a new hook:
+- Stop hook reminder → `stderr`
+- PreToolUse hook context → `stdout`
+- Either hook's debug logging → `stderr` (always works for visibility)
+
+### Rule 7 — Settings.json is loaded once at session start
 
 Hook entries added to `.claude/settings.json` mid-session do **not** activate until a new session starts. This is the most surprising fact about hook deployment. After installing hooks: `/exit` and re-run `claude` for them to take effect. Verify in a brand-new session, not the one that installed them.
 
-### Rule 7 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
+### Rule 8 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
 
 `.local.json` is per-machine (gitignored). Hooks meant to enforce team rules belong in the shared `settings.json` so every contributor and CI run gets them. Leave `.local.json` for personal MCP allowlists.
 

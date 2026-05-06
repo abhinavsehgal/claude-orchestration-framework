@@ -108,7 +108,11 @@ function main() {
   if (result.code === 0) process.exit(0);
 
   const out = (result.stderr || result.stdout).trim();
-  process.stdout.write(
+  // Stop hook contract (verified empirically against live Claude Code v2.x):
+  // stdout from a Stop hook is captured but NOT surfaced into the next turn's
+  // context. stderr IS surfaced verbatim as a "Stop hook feedback:\n[node ...]: <stderr>"
+  // block visible to the model. So the build-failure reminder must go to stderr.
+  process.stderr.write(
     [
       "<system-reminder>",
       `**${GOLDEN_RULE_REF} — \`${BUILD_COMMAND.join(" ")}\` failed.**`,

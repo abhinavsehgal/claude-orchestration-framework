@@ -56,6 +56,27 @@ echo "EXIT=$?"  # should print EXIT=2
 
 **Rollback:** delete the relevant entry from the `Stop` array in `.claude/settings.json` (leave `correction-capture-prompt.mjs` if it's also there).
 
+## Stop-hook IO contract (important for anyone writing new Stop hooks)
+
+Verified empirically against live Claude Code v2.x: **Stop hook stdout is captured but NOT surfaced into the next turn's context. Only stderr is.** Concretely:
+
+| Channel | What happens |
+|---|---|
+| `stdout` from a Stop hook | Captured by the harness. Not visible to the model in the next turn. |
+| `stderr` from a Stop hook | Surfaced verbatim as a `Stop hook feedback:\n[node ...]: <stderr>` block. Visible to the model. Empty stderr → harness writes `No stderr output`. |
+| Exit code 0 | Stop allowed. |
+| Exit code 2 | Stop blocked, model resumes. Combine with stderr writes to actually inject context. |
+
+This contract differs from `PreToolUse` hooks, which DO surface stdout. If you copy a `PreToolUse` pattern into a `Stop` hook, the reminder won't reach the model — silent delivery failure. The framework's `correction-capture-prompt.mjs.template` and `build-gate.mjs.template` write their reminders to stderr for this reason.
+
+When writing a new Stop hook:
+- Reminder content (what you want the model to see) → **stderr**
+- Debug logging during development → also stderr (will appear inline in feedback during testing)
+- Don't write to stdout from a Stop hook unless you're sure why
+
+When writing a new `PreToolUse` hook:
+- Use stdout (this is what `surface-matching-rules.mjs.template` does)
+
 ## Why hooks live in team-shared `settings.json` (not `settings.local.json`)
 
 `settings.json` is checked into git → every contributor and CI run gets the same enforcement. `settings.local.json` is per-machine (gitignored). A rule-enforcement hook that only fires on one developer's machine is theatre.

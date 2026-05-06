@@ -110,7 +110,13 @@ function main() {
     "",
   ].join("\n");
 
-  process.stdout.write(reminder);
+  // Stop hook contract (verified empirically against live Claude Code v2.x):
+  // stdout from a Stop hook is captured but NOT surfaced into the next turn's
+  // context. stderr IS surfaced verbatim as a "Stop hook feedback:\n[node ...]: <stderr>"
+  // block visible to the model. So the §9 reminder must go to stderr, not stdout.
+  // The wrapper line is harmless — the model parses through it and acts on the
+  // <system-reminder> body inside.
+  process.stderr.write(reminder);
   process.exit(2);
 }
 
