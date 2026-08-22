@@ -64,19 +64,19 @@ For EACH collision found, STOP and ASK:
 
 Do NOT silently overwrite ANY collision. If the user picks (c) merge, propose the merged content and get explicit approval before writing.
 
-### Pre-flight 3 — `applies_to:` glob conflict check
+### Pre-flight 3 — `paths:` glob conflict check
 
-For each new rule file you plan to create, check if existing rule files have an OVERLAPPING `applies_to:` glob:
+For each new rule file you plan to create, check if existing rule files have an OVERLAPPING `paths:` glob:
 
 ```bash
 # Read all existing rule file frontmatters
 for f in .claude/rules/*.md; do
-  [ -f "$f" ] && echo "=== $f ===" && awk '/^applies_to:/,/^---$/' "$f" | head -10
+  [ -f "$f" ] && echo "=== $f ===" && awk '/^paths:/,/^---$/' "$f" | head -10
 done
 ```
 
-If your proposed `applies_to:` glob (e.g. `"src/api/**/*.ts"`) overlaps with an existing rule's glob, BOTH rule files will be referenced when editing matching files — leading to potentially contradictory rules. STOP and ASK:
-> `<NEEDS USER CONFIRMATION: My proposed .claude/rules/api.md (applies_to: "src/api/**/*.ts") overlaps with existing .claude/rules/server.md (applies_to: "src/api/**,src/server/**"). Options: (a) merge into the existing file, (b) tighten my proposed glob to a non-overlapping subset, (c) accept the overlap (both will be referenced). Which?>`
+If your proposed `paths:` glob (e.g. `"src/api/**/*.ts"`) overlaps with an existing rule's glob, BOTH rule files will be referenced when editing matching files — leading to potentially contradictory rules. STOP and ASK:
+> `<NEEDS USER CONFIRMATION: My proposed .claude/rules/api.md (paths: "src/api/**/*.ts") overlaps with existing .claude/rules/server.md (paths: "src/api/**,src/server/**"). Options: (a) merge into the existing file, (b) tighten my proposed glob to a non-overlapping subset, (c) accept the overlap (both will be referenced). Which?>`
 
 ### Pre-flight 4 — Drift detection on existing `CLAUDE.md`
 
@@ -263,10 +263,35 @@ firebase-debug.log
 
 (Skip whichever doesn't apply.)
 
+### Step 11 — Create the project-truth set (v1.2.0)
+
+These three files are what a FRESH agent with no transcript reads first. Generate them from the
+codebase with the same evidence discipline as the rules — every state claim date-stamped, every
+command copied from the real build config, never guessed:
+
+- `docs/ai-context/PROJECT.md` from `<framework path>/templates/PROJECT.md.template`. Fill §2
+  (environments + **what the deploy pipeline does NOT do**), §3 (what is live where — if you cannot
+  verify an environment, write `unknown`, never a guess), §6 (sources of truth: the canonical helper
+  per concept, found by grep), §7 (commands, verified against the build config file).
+- `docs/ai-context/LEARNINGS.md` from `<framework path>/templates/LEARNINGS.md.template`. On a
+  brownfield repo, seed §A/§B from the git log and any existing post-mortems or ADRs; seed §D with
+  the generic corrections already in the template; leave §E for the owner to fill.
+- `docs/ai-context/GLOSSARY.md` from `<framework path>/templates/GLOSSARY.md.template` — list every
+  domain concept you found called by more than one name, with the file:field evidence.
+- `.claude/skills/<project-slug>-engineering/SKILL.md` from
+  `<framework path>/templates/engineering-playbook-skill.md.template`.
+- One `docs/<AREA>_BACKLOG.md` from `<framework path>/templates/BACKLOG.md.template` for the
+  largest area, seeded with any TODO/FIXME clusters you found (each with what / why / effort /
+  revisit-when).
+
+Use `<framework path>/templates/CLAUDE.md.template` as the shape for Step 9's router — its golden
+rules 9–12 (corrections → rules, deferred work written, production push freshens docs, one name per
+concept) are the v1.2.0 additions.
+
 ## Constraints
 
 - **Do not commit anything.** Show me each file. I'll commit at the end.
-- **Do not modify existing application code.** Only create new files in `.claude/`, `docs/ai-context/`, `docs/_archive/`, and update `.gitignore` + `CLAUDE.md`.
+- **Do not modify existing application code.** Only create new files in `.claude/`, `docs/ai-context/`, `docs/_archive/`, `docs/<AREA>_BACKLOG.md`, and update `.gitignore` + `CLAUDE.md`.
 - **Pre-flight checks are mandatory** (see top of prompt). Do not skip even on apparent greenfield. If pre-flight raises ANY `<NEEDS USER CONFIRMATION>` flag, STOP and present all flags before any file write.
 - **Snapshot first, write second.** Pre-flight 1 creates `.claude-pre-bootstrap-backup/` — that backup is your safety net. If you have NOT created the backup, do not proceed to Step 1.
 - **Never silently overwrite.** Any pre-existing file at a destination path you'd write requires explicit user approval (per pre-flight 2). "Merge" is not the default — ASK whether to overwrite, skip, or merge.

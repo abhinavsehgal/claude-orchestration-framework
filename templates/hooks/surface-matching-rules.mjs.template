@@ -7,7 +7,7 @@
 //     "hooks": [{ "type": "command", "command": "node .claude/scripts/surface-matching-rules.mjs" }]
 //   }]
 //
-// On every Write|Edit|MultiEdit, reads the `applies_to:` glob frontmatter of
+// On every Write|Edit|MultiEdit, reads the `paths:` glob frontmatter of
 // every `.claude/rules/*.md`, matches the path being edited, and emits the
 // matching rule bodies to stdout. Claude Code injects stdout as a
 // <system-reminder> into model context BEFORE the edit fires.
@@ -16,7 +16,7 @@
 //
 // === Customization ===
 // Most projects don't need to edit this file. Customize via:
-//   - .claude/rules/*.md `applies_to:` globs (script discovers them)
+//   - .claude/rules/*.md `paths:` globs (script discovers them; legacy `applies_to:` also read)
 //   - MAX_BODY_CHARS / MAX_TOTAL_CHARS below if your rules are unusually large
 //   - GOLDEN_RULE_REF below if your CLAUDE.md numbers golden rules differently
 
@@ -138,7 +138,10 @@ function main() {
     let content;
     try { content = readFileSync(join(RULES_DIR, f), "utf-8"); } catch { continue; }
     const { meta, body } = parseFrontmatter(content);
-    const globs = Array.isArray(meta.applies_to) ? meta.applies_to : [];
+    // `paths:` is the NATIVE Claude Code field (rules load on read). `applies_to:`
+    // is the v1.0 framework-private name, honoured for un-migrated rule files.
+    const globs = Array.isArray(meta.paths) ? meta.paths
+               : Array.isArray(meta.applies_to) ? meta.applies_to : [];
     if (globs.length === 0) continue;
     if (globs.some((g) => matchesGlob(g, rel))) {
       matches.push({ file: f, name: meta.name ?? f, body: body.trim() });

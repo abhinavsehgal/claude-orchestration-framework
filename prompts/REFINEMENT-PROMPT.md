@@ -54,7 +54,7 @@ Propose specific edits to agent definitions, NOT broader restructuring.
 ### 5. Rule rot
 
 For each `.claude/rules/*.md` file:
-- Are the `applies_to:` globs still matching real files in the codebase?
+- Are the `paths:` globs still matching real files in the codebase?
 - Are any "hard rules" describing fixed bugs (the constraint no longer exists)? → propose deletion
 - Do new rules need to be added based on recent production incidents?
 
@@ -76,6 +76,25 @@ Based on what you've observed, recommend whether to add:
 - **CronCreate scheduled context-refactor** — automatic quarterly cleanup pass. (Recommend if `docs/` accumulates stale material between manual cleanups.)
 
 For each recommendation, give a one-paragraph justification.
+
+### 8. Platform drift (v1.2.0)
+
+The platform moves under the framework's conventions (Pitfall 18). Re-read the official pages for
+subagents, memory/rules, hooks and headless mode and diff them against what this project's agents,
+rules and `docs/ai-context/HOOKS.md` assume. Specifically check: rules use native `paths:` (not a
+private field); nothing claims subagents cannot nest; hook IO contracts still hold; any
+`claude -p` delegation still loads hooks without `--bare`. Report each stale assumption with the doc
+URL that contradicts it.
+
+### 9. Project-truth freshness (v1.2.0)
+
+- `docs/ai-context/PROJECT.md` §3: is every row's environment state still true? Diff against the
+  changelog since the header's verified-on date; re-stamp the header after fixing.
+- `docs/ai-context/LEARNINGS.md`: any §D correction that has been violated in the last month
+  despite being written down? That is the signal to promote it to a hook (Chapter 10).
+- Backlogs: any `docs/*_BACKLOG.md` item older than a quarter with no revisit signal → propose
+  archive or delete. Any "later" in recent PR descriptions that never reached a backlog?
+- Glossary: any new name for an existing concept introduced since the last pass?
 
 ## Output format
 
@@ -108,6 +127,10 @@ Produce a structured report:
 [findings + proposed fixes]
 
 ## Hardening recommendations
+
+## Platform drift
+
+## Project-truth freshness
 - [ ] Hop limit hook — recommended? Why?
 - [ ] Schema enforcement hook — recommended? Why?
 - [ ] permissions.deny — recommended? Why?

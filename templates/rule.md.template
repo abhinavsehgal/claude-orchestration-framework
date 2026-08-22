@@ -1,7 +1,7 @@
 ---
 name: <DOMAIN_NAME>
 description: Scoped rules for <DOMAIN_DESCRIPTION>. Read before editing any of the path globs below.
-applies_to:
+paths:
   - "<GLOB_PATTERN_1>"
   - "<GLOB_PATTERN_2>"
   - "<GLOB_PATTERN_3>"
@@ -32,7 +32,7 @@ applies_to:
 
 ## How to use this file
 
-1. If you're editing any path in `applies_to`, read this file first.
+1. If you're editing any path in `paths`, read this file first.
 2. Report which rule files were read in your task summary.
 
 ## Cross-links
@@ -58,7 +58,7 @@ A bad rule:
 - "We should always..." (aspirational; not enforced)
 - Pure style preference (lint config does this)
 - Contradicts another rule (have the context-librarian reconcile)
-- Has no `applies_to` (no signal for agents to read it)
+- Has no `paths` (no signal for agents to read it)
 - Long rationale paragraph (move to canonical doc)
 
 When you've shipped 3-5 rules in this file, stop. Add more only when production teaches you new gotchas. Don't try to anticipate.

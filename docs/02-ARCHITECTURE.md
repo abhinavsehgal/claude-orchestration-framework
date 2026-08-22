@@ -67,7 +67,7 @@ See `03-AGENTS-GUIDE.md` for how to design agents.
 
 ### `.claude/rules/`
 
-Path-globbed invariants. Each rule file's frontmatter has `applies_to:` listing path globs. When an agent is about to edit a file matching one of those globs, it must read the rule first. The rule contains "hard rules," "what not to do," and cross-links.
+Path-globbed invariants. Each rule file's frontmatter has `paths:` listing path globs — a native Claude Code field: the rule loads when Claude reads a matching file (rules without `paths:` load at launch). When an agent is about to edit a file matching one of those globs, it must have read the rule first. The rule contains "hard rules," "what not to do," and cross-links.
 
 Example: `.claude/rules/database.md` might apply to `src/db/**/*.ts` and contain rules like "never run raw SQL in route handlers; use the repository layer."
 
@@ -126,7 +126,7 @@ Every agent knows where to find:
 - Its own contract: `.claude/agents/<self>.md`
 - The handoff schema: `docs/ai-context/HANDOFF_SCHEMA.md`
 - Routing: `docs/ai-context/INDEX.md`
-- Rules for paths it might edit: `.claude/rules/*.md` matched via `applies_to`
+- Rules for paths it might edit: `.claude/rules/*.md` matched via `paths`
 - Canonical refs: `docs/<UPPERCASE>.md`
 
 There is no ambiguity. New tasks follow the same path every time.
@@ -163,7 +163,11 @@ For monorepos, you can either:
 - Have one `.claude/` at the root that knows about all packages, or
 - Have one `.claude/` per package + a root `.claude/` that orchestrates across packages
 
-The first is simpler. The second is more isolated. Pick based on whether tasks routinely cross package boundaries.
+The first is simpler. The second is more isolated. Pick based on whether tasks routinely cross package boundaries. Two platform facts decide what goes where (verified 2026-08-22): per-package `CLAUDE.md` and `.claude/rules/` load **on demand** when Claude reads files in that package, but `.claude/settings.json` (hooks, permission rules) loads **only from the directory you start in**. So gates live with the code they gate, and a root session does not inherit a package's hooks. The official *monorepos and large codebases* page covers `claudeMdExcludes`, sparse worktrees and per-package skills.
+
+### Multiple repositories (web + mobile + microservices)
+
+When the units are separate repos rather than packages, see **`12-MULTI-REPO-WORKSPACES.md`**: every repo keeps its own install, shared specialists become a plugin, and a workspace repo holds only the cross-repo orchestrator, the service map and the contract rules.
 
 ### Mobile + web split
 

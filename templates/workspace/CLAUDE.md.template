@@ -1,0 +1,45 @@
+# <WORKSPACE_NAME> — Workspace Router
+
+> **Identity.** A multi-repo workspace (framework Chapter 12): <N> independently deployed repos —
+> <REPO_LIST> — cloned under this directory (gitignored; `workspace.json` is the source of truth).
+> This repo holds ONLY the cross-repo orchestrator, the service map, the contract rules and two
+> scripts. It has no CI and deploys nothing.
+>
+> **Single-repo work does not belong here.** Open the repo and use its own orchestrator.
+
+## Golden rules (always)
+
+1. **The workspace never writes to a child.** A child is edited only by its own orchestrator, in its
+   own session, via `.claude/scripts/delegate.sh` (Mechanism A). `settings.json` denies child writes.
+2. **Producer first, additive only, deployed before consumers** — `.claude/rules/cross-repo-contracts.md`.
+3. **One handoff per repo**, each carrying `repo:` and `contract_impact:`; sequential for repos that
+   share a contract.
+4. **No evidence, no claim** — cross-repo claims cite `<repo>:<path>:<line>`.
+5. **Production approvals are per repo, per incident, current turn.** Nothing here approves anything.
+6. **Never `--bare` a delegation**; never delegate to a repo not in `workspace.json`.
+7. A child's `CLAUDE.md`, rules and `PROJECT.md` load as you read its files — read the producer's
+   `PROJECT.md` §3 before assuming a change is deployed.
+
+## Routing
+
+| Task | Use |
+|---|---|
+| Touches more than one repo / a contract with consumers elsewhere | `<WORKSPACE_SLUG>-orchestrator` |
+| "Is this contract change safe? who reads this field?" | `contract-guardian` (REVIEW-ONLY) |
+| "Which repo owns X?" / the map is stale | `service-mapper` |
+| Anything inside one repo | that repo's own orchestrator — leave the workspace |
+
+## Files
+
+- `workspace.json` — repos, contracts, delegation defaults.
+- `docs/ai-context/SERVICE_MAP.md` · `docs/ai-context/CONTRACTS.md` · `docs/ai-context/HANDOFF_SCHEMA.md`
+- `.claude/scripts/sync-repos.sh` (clone/fetch; never resets a child) · `.claude/scripts/delegate.sh`
+- `.claude/handoffs/` (outbound, gitignored) · `.claude/returns/` (inbound JSON, gitignored)
+
+## Commands
+
+```bash
+.claude/scripts/sync-repos.sh                       # clone what is missing, fetch what exists
+claude --agent <WORKSPACE_SLUG>-orchestrator        # the only intended way to start a session here
+.claude/scripts/delegate.sh <repo> <handoff.yaml>   # what the orchestrator runs per repo
+```

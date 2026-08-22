@@ -50,7 +50,9 @@ const BUILD_RELEVANT_RE = /^src\/.+\.(ts|tsx|js|jsx)$|^(next\.config\.(ts|js|mjs
 const BUILD_COMMAND = ["npm", "run", "build", "--silent"];
 const DEPS_SENTINEL = "node_modules/next";  // path under REPO_ROOT
 const GOLDEN_RULE_REF = "CLAUDE.md golden rule §2";
-const BUILD_TIMEOUT_MS = 5 * 60 * 1000;
+// Size this to the SLOWEST honest build on a BUSY machine, not the fastest on an idle one.
+// A run the cap kills is inconclusive (see runBuild) — it never blocks the stop.
+const BUILD_TIMEOUT_MS = 12 * 60 * 1000;
 const MAX_OUTPUT_CHARS = 6000;
 
 function readStdin() {
@@ -84,6 +86,12 @@ function runBuild() {
   });
   return {
     code: r.status ?? 1,
+    // status === null means the timeout (or a signal) killed the run — the
+    // build never finished, so there is NO failure evidence. Rule 9 in
+    // docs/10-HOOK-HARDENING.md: a killed check is inconclusive, not failed.
+    // (A 5-min cap on a 4-min build, on a busy machine, produced an alarm loop
+    // every stop for a week.)
+    timedOut: r.status === null,
     stdout: r.stdout ?? "",
     stderr: r.stderr ?? "",
   };
@@ -106,6 +114,8 @@ function main() {
 
   const result = runBuild();
   if (result.code === 0) process.exit(0);
+  // Killed by the cap → no evidence either way. CI builds every PR; the next stop retries.
+  if (result.timedOut) process.exit(0);
 
   const out = (result.stderr || result.stdout).trim();
   // Stop hook contract (verified empirically against live Claude Code v2.x):

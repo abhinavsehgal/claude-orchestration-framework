@@ -239,7 +239,7 @@ For each specialist that DOESN'T have obvious need-to-exist evidence in the code
 ### 4. Path-globbed rules (proposed)
 For each specialist's domain, propose 1-2 rule files. For each rule file:
 - File name (`<.claude/rules/<name>.md>`)
-- `applies_to:` glob list (verify globs match real files via `find` or `ls`)
+- `paths:` glob list (verify globs match real files via `find` or `ls`)
 - Top 3-5 hard rules — each WITH source-confirmed evidence (cite file:line where the gotcha CURRENTLY lives in code or where a recent commit/PR fixed it)
 
 If you cannot find evidence for a proposed rule:

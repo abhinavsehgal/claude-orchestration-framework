@@ -1,0 +1,113 @@
+# <PROJECT_NAME> — Claude Code Router
+
+> **Identity.** <ONE_SENTENCE — what the product is, who uses it, the stack in five words.>
+>
+> **This file is the router, not the manual.** It points to the right docs / agents / rules per
+> task. Keep it under ~200 lines; detail lives in `docs/ai-context/`, `.claude/rules/`, `docs/`.
+
+---
+
+## Golden rules (always)
+
+1. **Never push to `<PROD_BRANCH>` or production without the project owner's current-turn approval.**
+2. Always start on `<BASE_BRANCH>`, freshly fetched. Run `<BUILD_COMMAND>` before commit.
+3. Don't refactor outside the task. Preserve existing behaviour unless asked.
+4. For data changes: trace UI → API → data → permissions → tests before touching.
+5. <SENSITIVE_DATA_RULE — e.g. "Customer data is regulated; read `.claude/rules/security-privacy.md` before touching auth, exports or deletion.">
+6. Don't read every doc. Use the routing map below.
+7. **Before editing any file, read the `.claude/rules/*.md` whose `paths:` match it**, and list the
+   rule files read in your final summary. (Path-scoped rules load when you read a matching file;
+   the optional rule-surfacing hook covers files written blind.)
+8. **Multi-agent handoffs are bidirectional and structured.** Orchestrator → specialist uses the
+   outbound `handoff:` block in `docs/ai-context/HANDOFF_SCHEMA.md`; specialists validate it, refuse
+   if vague, and end every response with the inbound `return:` block. **No evidence, no claim.**
+9. **Corrections harden into rules.** If the owner corrected a *recurring* pattern this turn, end
+   the turn by drafting a one-line patch to the right `.claude/rules/<file>.md` and ask for approval.
+   Never say "I'll remember" — memory is machine-local and invisible to every other agent.
+10. **Deferred work must be written, not spoken.** Any "later" / follow-up / known gap named in a
+    summary is appended to `docs/<AREA>_BACKLOG.md` (what / why / effort / revisit-when) before the
+    turn ends.
+11. **Every production push freshens the docs — same turn, no exceptions.** `<CHANGELOG_PATH>`
+    (the anchor), the affected orientation map(s), the affected rules, and `PROJECT.md` §3 if the
+    production state changed. (Hook-enforced if `doc-freshness-gate` is installed.)
+12. **One name per concept.** `docs/ai-context/GLOSSARY.md` is a rule file; adding a new name for
+    an existing concept is a defect.
+13. <OWNER_COMMUNICATION_RULE — optional; e.g. "Owner-facing messages use plain language; translate every technical term once." See `LEARNINGS.md` §E.>
+
+## Mandatory workflow (every non-trivial task)
+
+1. Restate the task. Identify affected roles.
+2. Read `docs/ai-context/PROJECT.md` (current truth — especially §3, what is live where) and
+   `docs/ai-context/INDEX.md`. Skim `docs/ai-context/LEARNINGS.md` §D before the first edit.
+3. Read only the minimum docs flagged for the task (50–150 lines each).
+4. For each file you plan to edit, read the matching `.claude/rules/*.md`.
+5. Medium/complex tasks → `<PROJECT_SLUG>-orchestrator`. Handoffs use the schema (rule 8).
+6. Inspect code before proposing changes. Smallest safe change.
+7. Run the relevant checks. Verification follows the proof ladder in
+   `.claude/skills/<PROJECT_SLUG>-engineering/SKILL.md` (a green build is evidence, not proof).
+8. **Definition of done:** changed files, checks run with results, risks, follow-ups (written to a
+   backlog), and the list of rule files read.
+
+---
+
+## Context routing — pick by task area
+
+| Task touches… | Read this orientation map first |
+|---|---|
+| <AREA_1> | `docs/ai-context/<area-1>.md` |
+| <AREA_2> | `docs/ai-context/<area-2>.md` |
+| Schema / migrations / permissions / API patterns | `docs/ai-context/<data>.md` |
+| Auth / sessions / sensitive data | `docs/ai-context/security-privacy.md` |
+| Tests / E2E | `docs/ai-context/testing.md` |
+| Build / deploy / env | `docs/ai-context/release-deployment.md` |
+| Repo orientation / what is live where | `docs/ai-context/PROJECT.md` |
+| Past decisions / failed approaches / bug patterns / corrections | `docs/ai-context/LEARNINGS.md` |
+| Vocabulary | `docs/ai-context/GLOSSARY.md` |
+
+## Agent routing — pick by task class
+
+| Task class | Use |
+|---|---|
+| Anything medium/complex | `<PROJECT_SLUG>-orchestrator` (it picks the rest) |
+| <DOMAIN_1> | `<specialist-1>` |
+| <DOMAIN_2> | `<specialist-2>` |
+| QA in the real UI | `qa-functional` |
+| Auth / privacy / data exposure (review-only) | `security-privacy` |
+| Build / deploy / env | `release-devops` |
+| Docs / agents / rules tidy-up | `context-librarian` |
+
+## Skills (repeatable workflows)
+
+- `.claude/skills/<PROJECT_SLUG>-engineering/SKILL.md` — the six-gate playbook (start here when no
+  more specific skill fits).
+- `.claude/skills/investigate-bug/SKILL.md` · `.claude/skills/build-feature/SKILL.md` ·
+  `.claude/skills/qa-flow/SKILL.md` · `.claude/skills/context-refactor/SKILL.md`
+- `/commit-push-pr` — validate → commit → push → PR against `<BASE_BRANCH>`.
+
+## Reference docs (canonical — link, don't duplicate)
+
+- `docs/ai-context/PROJECT.md` — current truth · `docs/ai-context/LEARNINGS.md` — learnings
+- `docs/ai-context/HANDOFF_SCHEMA.md` — handoff schema · `docs/ai-context/HOOKS.md` — what is enforced
+- `docs/ARCHITECTURE.md` · `docs/API.md` · `<CHANGELOG_PATH>` · `docs/<AREA>_BACKLOG.md`
+
+## Branches & deploy
+
+| Branch | Environment | URL |
+|---|---|---|
+| `<PROD_BRANCH>` | production | <url> |
+| `<BASE_BRANCH>` | staging | <url> |
+
+<ONE_LINE — the only deploy mechanism, and what it does NOT do (e.g. migrations).>
+
+## Local dev
+
+```bash
+<DEV_COMMAND>
+<BUILD_COMMAND>        # must pass before commit
+<TEST_COMMAND>
+```
+
+## How to use this system
+
+Human-readable usage with copy-paste prompts: `docs/ai-context/ORCHESTRATION_SPOONFEEDER.md`.
+<IF_DUAL_TOOL: "GitHub Copilot reads `.github/copilot-instructions.md` (a thin router pointing at the SAME rules, agents and skills). Commit before switching tools.">

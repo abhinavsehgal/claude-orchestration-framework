@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# delegate.sh <repo-name> <handoff-file> — run a child repo's OWN orchestrator, in the child's
+# OWN session, on one framework handoff. Mechanism A in docs/12-MULTI-REPO-WORKSPACES.md.
+#
+# Why a separate session and not a subagent: `claude -p` started inside the child loads the
+# child's CLAUDE.md, rules, agents, skills AND runs the child's hooks (verified against the
+# headless-mode docs, 2026-08-22 — as long as --bare is NOT passed). Every layer-1 guarantee
+# the child's team built holds. The return block comes back as structured JSON.
+#
+# Requires: claude (Claude Code CLI), jq. Reads workspace.json for path/orchestrator/build.
+set -euo pipefail
+WS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+MANIFEST="$WS_ROOT/workspace.json"
+REPO="${1:?usage: delegate.sh <repo-name> <handoff-file>}"
+HANDOFF="${2:?usage: delegate.sh <repo-name> <handoff-file>}"
+SCHEMA="$WS_ROOT/.claude/scripts/return-schema.json"
+
+repo_json=$(jq -c --arg n "$REPO" '.repos[] | select(.name==$n)' "$MANIFEST")
+[ -n "$repo_json" ] || { echo "repo '$REPO' not in workspace.json" >&2; exit 1; }
+path=$(jq -r .path <<<"$repo_json"); orch=$(jq -r .orchestrator <<<"$repo_json")
+mode=$(jq -r '.delegation.permission_mode // "acceptEdits"' "$MANIFEST")
+tools=$(jq -r '.delegation.allowed_tools // "Bash(git *)"' "$MANIFEST")
+turns=$(jq -r '.delegation.max_turns // 40' "$MANIFEST")
+
+# The handoff file MUST carry `repo: <this repo>` — refuse otherwise (a handoff aimed at one
+# repo must never be run in another).
+grep -Eq "^\s*repo:\s*$REPO\s*$" "$HANDOFF" || { echo "handoff does not carry 'repo: $REPO'" >&2; exit 1; }
+
+mkdir -p "$WS_ROOT/.claude/returns"
+out="$WS_ROOT/.claude/returns/$(date +%Y%m%d-%H%M%S)-$REPO.json"
+
+# NOTE: no --bare (we WANT the child's hooks/agents/CLAUDE.md). `-p` never prompts, so the
+# allowlist is the child's entire permission budget for this run — keep it narrow.
+( cd "$WS_ROOT/$path" && claude -p "$(cat "$HANDOFF")" \
+    --agent "$orch" \
+    --permission-mode "$mode" \
+    --allowedTools "$tools" \
+    --max-turns "$turns" \
+    --output-format json \
+    --json-schema "$(cat "$SCHEMA")" ) > "$out"
+
+# Surface the parts the workspace orchestrator needs; keep the full JSON on disk.
+jq '{session_id, total_cost_usd, return: .structured_output}' "$out"

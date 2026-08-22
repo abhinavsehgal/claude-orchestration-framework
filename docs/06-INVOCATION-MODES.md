@@ -43,6 +43,25 @@ Examples:
 
 Specialist sessions inherit the specialist's `tools` allowlist and `maxTurns` cap. They cannot delegate further (subagents do not spawn other subagents per Claude Code semantics). Use when you know exactly which domain the work lives in and don't need cross-domain coordination.
 
+## Mode 4: Headless `claude -p` (scripts, CI, cross-repo delegation)
+
+`claude -p "<prompt>" --agent <name> --output-format json` runs one turn non-interactively and
+exits. Verified 2026-08-22: without `--bare`, a `-p` session loads the working directory's
+`CLAUDE.md`, rules, agents, skills **and runs its hooks** — so it is a faithful way to run a repo's
+orchestrator from a script or from another repo's session (Chapter 12, Mechanism A). `--json-schema`
+forces the answer into `structured_output` (use it for the `return:` block); `session_id` in the
+JSON lets you `--resume` later. `-p` never prompts, so pre-approve tools with `--allowedTools` or a
+`--permission-mode`, and keep that list narrow. `--bare` is for CI lint-style calls that should load
+*nothing* from the host; never use it when you want the repo's setup.
+
+## Mode 5: Dynamic workflows (many-agent sweeps)
+
+Script-driven orchestration — `agent()`, `parallel()`, `pipeline()` — triggered with the
+`ultracode` keyword. Use for repeatable fan-outs (review every changed file across N dimensions,
+migrate 40 call sites, exhaustive research). It complements, not replaces, the orchestrator: the
+orchestrator decides *what* to do and issues schema-bound handoffs; a workflow is how it runs twenty
+of them at once. Budget accordingly — a workflow can spawn dozens of agents.
+
 ## Why we don't make the orchestrator the default
 
 Setting `agent: "<orchestrator-name>"` in `.claude/settings.json` would force every session into orchestrator mode, which has:

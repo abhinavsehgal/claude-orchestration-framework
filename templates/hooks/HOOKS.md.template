@@ -81,6 +81,14 @@ When writing a new `PreToolUse` hook:
 
 `settings.json` is checked into git → every contributor and CI run gets the same enforcement. `settings.local.json` is per-machine (gitignored). A rule-enforcement hook that only fires on one developer's machine is theatre.
 
+### `Stop` → `doc-freshness-gate.mjs` (Pattern 5)
+
+**Purpose:** a production push (a `git push` / `gh pr merge` referencing `<PROTECTED_BRANCH>`) this
+session with no edit to `<CHANGELOG_PATH>` afterwards blocks the stop and injects the full doc-update
+checklist. **Test:** `printf '%s\n' '{"message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"git push origin <PROTECTED_BRANCH>"}}]}}' > /tmp/t.jsonl && echo '{"transcript_path":"/tmp/t.jsonl"}' | node .claude/scripts/doc-freshness-gate.mjs; echo $?` → expect `2`.
+**Rollback:** remove its entry from the `Stop` array. **Guards:** heredoc bodies and quoted commands
+never count as a push; loop guard via `stop_hook_active`.
+
 ## Adding a new hook
 
 1. Write the script in `.claude/scripts/<name>.mjs`. Use Node ESM (`.mjs`). **Fail silent** — never block a tool call due to a hook bug.

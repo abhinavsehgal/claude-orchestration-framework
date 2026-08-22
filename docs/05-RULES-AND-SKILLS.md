@@ -22,11 +22,19 @@ Don't write a rule for:
 
 ### Rule file structure
 
+> **v1.2.0 — `paths:` is native.** Claude Code loads `.claude/rules/*.md` itself: a rule with a
+> `paths:` frontmatter list loads when Claude *reads* a file matching one of the globs; a rule
+> without `paths:` loads at launch, with the same priority as `CLAUDE.md`; nested `.claude/rules/`
+> in subdirectories load on demand; symlinked rule files work. v1.0 used a framework-private
+> `applies_to:` field plus a hook. The field is now `paths:` so the platform and the optional
+> rule-surfacing hook (Chapter 10, Pattern 1) read one source. The hook still earns its place for
+> one case the native loader misses: a brand-new file that is *written* without ever being *read*.
+
 ```markdown
 ---
 name: <domain-name>
 description: Scoped rules for <domain>. Read before editing any of the path globs below.
-applies_to:
+paths:
   - "<glob1>"
   - "<glob2>"
 ---
@@ -51,7 +59,7 @@ applies_to:
 
 ## How to use this file
 
-1. If you're editing any path in `applies_to`, read this file first.
+1. If you're editing any path in `paths`, read this file first.
 2. Report which rule files were read in your task summary.
 
 ## Cross-links
@@ -66,7 +74,7 @@ applies_to:
 Use standard shell globs. Examples:
 
 ```yaml
-applies_to:
+paths:
   - "src/api/**/*.ts"                      # all TypeScript under src/api/
   - "src/db/migrations/**/*.sql"           # all migration SQL files
   - "src/{lib,utils}/auth-*.ts"            # auth-related lib/util files
@@ -139,7 +147,7 @@ Globs are matched against the relative path from project root.
 
 ❌ **Rules that contradict other rules.** Specialist confusion. Have the context-librarian agent reconcile.
 
-❌ **Rules with no `applies_to`.** Without globs, agents have no signal to read it. Either add globs or move to an orientation map.
+❌ **Rules with no `paths`.** Without globs, agents have no signal to read it. Either add globs or move to an orientation map.
 
 ## Skills
 
