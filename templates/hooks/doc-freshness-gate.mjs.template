@@ -12,7 +12,7 @@
 // Fail-silent (Rule 1): any unexpected error exits 0.
 // Loop guard (Rule 4): stop_hook_active === true → allow.
 //
-// Stack-agnostic. Customise the three constants below.
+// Stack-agnostic. Customise the three constants below plus <REPO_NAME_FRAGMENT> (inline, in isProdPush).
 
 import { readFileSync } from "node:fs";
 import { resolve, isAbsolute } from "node:path";

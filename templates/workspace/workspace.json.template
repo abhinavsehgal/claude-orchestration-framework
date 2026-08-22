@@ -20,7 +20,7 @@
       "orchestrator": "<REPO_2_NAME>-orchestrator",
       "build": "<REPO_2_BUILD_COMMAND>",
       "test": "<REPO_2_TEST_COMMAND>",
-      "owns": ["<…>"]
+      "owns": ["<capability or bounded context this repo owns>"]
     }
   ],
   "contracts": [

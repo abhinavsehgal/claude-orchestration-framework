@@ -122,6 +122,7 @@ What it creates:
 | `.claude/agents/<name>.md` ×N | The workers. |
 | `.claude/rules/<area>.md` | The sticky notes, each with a `paths:` glob. |
 | `.claude/skills/<repo>-engineering/SKILL.md` | The six-gate working method every task follows. |
+| `.claude/skills/investigate-bug/`, `build-feature/` | Two starter recipe cards. |
 | `docs/ai-context/PROJECT.md` | "What is true right now" — what's live where, verified commands. |
 | `docs/ai-context/LEARNINGS.md` | Decisions, failed approaches, corrections. |
 | `docs/ai-context/HANDOFF_SCHEMA.md`, `INDEX.md`, `GLOSSARY.md` | The note format, the map, the one-name-per-thing list. |
@@ -218,7 +219,16 @@ cd <team>-workspace
 
 ### 2. Copy the workspace templates into place
 
-**Why:** thirteen files, each with a fixed home. `templates/workspace/README.md` has the same table.
+**Why:** thirteen files, each with a fixed home. The bootstrap script does the copying AND fills the
+per-repo placeholders, `.gitignore`, the `settings.json` deny block and the service-map rows from
+`workspace.json` — so fill the manifest first (step 3) if you want the short path:
+
+```bash
+cp ~/frameworks/claude/templates/workspace/workspace.json.template workspace.json   # fill it, then:
+bash ~/frameworks/claude/templates/workspace/bootstrap.sh.template ~/frameworks/claude
+```
+
+Or by hand (`templates/workspace/README.md` has the same table):
 
 ```bash
 T=~/frameworks/claude/templates/workspace

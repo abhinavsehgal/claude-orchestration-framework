@@ -1,4 +1,4 @@
- # INVENTORY PROMPT
+# INVENTORY PROMPT
 
 Paste this into Claude Code at the root of the project you want to bootstrap. Adjust `<framework path>` to match your install location.
 
@@ -6,7 +6,7 @@ Paste this into Claude Code at the root of the project you want to bootstrap. Ad
 
 I want to adopt the Claude Orchestration Framework on this project. Before we generate any files, do a read-only inventory.
 
-The framework lives at `<framework path>` (default: `/Users/<you>/Desktop/claude-orchestration-framework/`). Read `docs/01-PRINCIPLES.md`, `docs/02-ARCHITECTURE.md`, and `docs/03-AGENTS-GUIDE.md` from there before answering. Do not modify any files in this project yet.
+The framework lives at `<framework path>` (wherever you cloned it — the quickstart uses `~/frameworks/claude`). Read `docs/01-PRINCIPLES.md`, `docs/02-ARCHITECTURE.md`, and `docs/03-AGENTS-GUIDE.md` from there before answering. Do not modify any files in this project yet.
 
 ## ⚠ Two universal rules for this entire pass
 
@@ -158,6 +158,21 @@ find . -maxdepth 1 -type f -name "*.md" | sort   # README, CONTRIBUTING, etc.
 
 For each doc found, read its first 20 lines to categorize (canonical / orientation / archive / workflow).
 
+### Step F2 — Existing Claude Code configuration
+
+Everything the bootstrap will create may already exist in some form (a `/init`-generated `CLAUDE.md`,
+hand-written agents, rules, hooks). List it now so the bootstrap's pre-flight has no surprises:
+
+```bash
+ls -la CLAUDE.md .claude/ 2>/dev/null
+ls .claude/agents .claude/rules .claude/skills .claude/scripts .claude/commands 2>/dev/null
+head -40 .claude/settings.json 2>/dev/null
+ls docs/_archive docs/*_BACKLOG.md 2>/dev/null
+```
+
+For each existing file, note its name and (for agents/rules) the first ~10 lines of frontmatter.
+Do NOT propose changes to them here — just surface them in section 5.
+
 ### Step G — Hygiene scan
 
 ```bash
@@ -220,6 +235,12 @@ If unsure whether a role exists:
 `<NEEDS USER CONFIRMATION: Is "<proposed-role>" a real user type, or is it a code abstraction?>`
 
 ### 3. Domain boundaries (proposed specialists)
+
+> **Naming rule (required):** the orchestrator is named `<repo-name>-orchestrator` — the repository's
+> own name, e.g. `orders-orchestrator`, never a bare `orchestrator`. If this repo will ever join a
+> multi-repo workspace (Chapter 12), its orchestrator is delegated to BY NAME and names must be unique
+> across every repo in the workspace. Propose it explicitly here.
+
 Propose specialists. For each:
 - `name:` (lowercase-hyphenated, domain-shaped not technology-shaped)
 - One-sentence description of what it owns
@@ -248,8 +269,12 @@ If you cannot find evidence for a proposed rule:
 
 NEVER include rules that are just generic best practices. The framework's value is project-specific gotchas, not lint config.
 
-### 5. Existing documentation tier
-Categorize every file in `docs/` (or wherever the project keeps docs):
+### 5. Existing documentation tier (and existing Claude Code config)
+First list every existing `CLAUDE.md`, `.claude/agents/*`, `.claude/rules/*`, `.claude/skills/*`,
+`.claude/settings.json` hook and `docs/ai-context/*` file found in Step F2 — the bootstrap's pre-flight
+will ask, per file, whether to keep / merge / replace each one.
+
+Then categorize every file in `docs/` (or wherever the project keeps docs):
 - **Canonical** — full-detail, authoritative, currently accurate. Stays at `docs/<UPPERCASE>.md`.
 - **Orientation candidate** — domain-specific, would benefit from being condensed into `docs/ai-context/<area>.md`. Suggest the new filename.
 - **Archive candidate** — dated reports, sprint snapshots, post-mortems. Suggests the archive subdir (`docs/_archive/<YYYY-MM>/`).

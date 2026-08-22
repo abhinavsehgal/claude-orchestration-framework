@@ -10,12 +10,16 @@ docs/
 │   ├── INDEX.md
 │   ├── HANDOFF_SCHEMA.md
 │   ├── ORCHESTRATION_SPOONFEEDER.md
+│   ├── PROJECT.md                 ← (v1.2) current truth — what is live where
+│   ├── LEARNINGS.md               ← (v1.2) decisions / failures / corrections
+│   ├── GLOSSARY.md                ← (v1.2) one name per concept
 │   └── <area>-experience.md       ← 50-150 lines per area
 │
 ├── ARCHITECTURE.md                ← TIER 2: canonical references (full detail)
 ├── API.md
 ├── TECH_STACK.md
 ├── <UPPERCASE>.md
+├── <AREA>_BACKLOG.md              ← (v1.2) deferred work, one per feature area
 │
 └── _archive/                      ← TIER 3: frozen historical
     ├── README.md                  ← archive convention
@@ -49,6 +53,8 @@ docs/
 - `INDEX.md` — task-type → docs + agent map. The router for the orientation maps.
 - `HANDOFF_SCHEMA.md` — the bidirectional handoff schema.
 - `ORCHESTRATION_SPOONFEEDER.md` — the human-facing usage guide for the framework.
+- `PROJECT.md`, `LEARNINGS.md`, `GLOSSARY.md` — (v1.2) the project-truth set (`11-PROJECT-TRUTH-AND-LEARNINGS.md`).
+- `HOOKS.md` (optional) — what the installed hooks enforce (`10-HOOK-HARDENING.md`).
 - `MIGRATION_LEDGER.md` (optional) — tracks doc/structure migrations in progress.
 - `LEGACY_BACKUP.md` (optional) — frozen pre-refactor snapshot, if you migrated from a single huge CLAUDE.md.
 
@@ -115,6 +121,12 @@ Is it the system architecture, API reference, or another full-detail doc?
 
 Is it a path-globbed invariant ("don't do X when editing Y")?
   → .claude/rules/<domain>.md
+
+Is it "what is live where" / a decision / a failed approach / a correction?
+  → docs/ai-context/PROJECT.md (state) or LEARNINGS.md (history) — see 11-PROJECT-TRUTH-AND-LEARNINGS.md
+
+Is it deferred work ("we'll do that later")?
+  → docs/<AREA>_BACKLOG.md — written, never just spoken
 
 Is it a multi-step workflow that recurs?
   → .claude/skills/<workflow>/SKILL.md
@@ -194,7 +206,7 @@ monorepo-root/
 └── packages/
     ├── package-a/
     │   ├── CLAUDE.md                  ← package-specific router
-    │   ├── .claude/agents/            ← package-specific specialists (optional)
+    │   ├── .claude/agents/            ← package-specific specialists (optional — visible only to sessions started in this package; see 02 § Monorepos)
     │   └── docs/ai-context/           ← package-specific orientation
     └── package-b/
         └── ...
@@ -205,7 +217,7 @@ monorepo-root/
 ```
 your-product-repo/
 ├── .claude/agents/
-│   ├── orchestrator.md
+│   ├── <repo>-orchestrator.md
 │   ├── product-a-frontend.md
 │   ├── product-a-backend.md
 │   ├── product-b-frontend.md

@@ -147,7 +147,7 @@ Globs are matched against the relative path from project root.
 
 ❌ **Rules that contradict other rules.** Specialist confusion. Have the context-librarian agent reconcile.
 
-❌ **Rules with no `paths`.** Without globs, agents have no signal to read it. Either add globs or move to an orientation map.
+❌ **Path-specific rules with no `paths`.** A rule without `paths:` loads at launch into *every* session, like `CLAUDE.md` — reserve that for the rare truly-global rule (e.g. a workspace's cross-repo contract protocol, Chapter 12). Everything else gets globs, or moves to an orientation map.
 
 ## Skills
 
@@ -222,7 +222,7 @@ Steps: identify data involved → identify if regulated subjects involved (minor
 
 #### `audit-pipeline/SKILL.md`
 
-For projects with quality-critical generation pipelines (AI question banks, data ETL, content moderation): trace lifecycle → verify schema → verify required fields on every write → verify validation layers → verify admin review surface → identify gaps → severity-rank findings.
+For projects with quality-critical generation pipelines (AI content generation, data ETL, content moderation): trace lifecycle → verify schema → verify required fields on every write → verify validation layers → verify admin review surface → identify gaps → severity-rank findings.
 
 #### `context-refactor/SKILL.md`
 

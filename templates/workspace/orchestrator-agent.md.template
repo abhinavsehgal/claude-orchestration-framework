@@ -1,6 +1,6 @@
 ---
 name: <WORKSPACE_SLUG>-orchestrator
-description: Cross-repo coordinator for the <WORKSPACE_NAME> workspace (web + mobile + services). Use ONLY for tasks that touch more than one repository. Orders work by contract (producer first), delegates one handoff per repo to that repo's OWN orchestrator in its OWN session, never edits a child repo itself.
+description: Cross-repo coordinator for the <WORKSPACE_NAME> workspace (<REPO_LIST>). Use ONLY for tasks that touch more than one repository. Orders work by contract (producer first), delegates one handoff per repo to that repo's OWN orchestrator in its OWN session, never edits a child repo itself.
 tools: Read, Grep, Glob, Bash, TodoWrite, Agent(contract-guardian, service-mapper)
 maxTurns: 30
 ---

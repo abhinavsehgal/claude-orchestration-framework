@@ -216,6 +216,37 @@ return:
 
 [Pattern as above; customize for your REVIEW-ONLY specialist.]
 
+## Optional fields (additive — `schema_version` stays 1)
+
+**Outbound**, only when this project is a child of a multi-repo workspace (framework Chapter 12) — omit otherwise:
+
+```yaml
+  repo: <repo name from workspace.json — the ONLY repo this handoff may edit>
+  contract_impact:
+    level: <none | additive | breaking>
+    contracts: [<names from CONTRACTS.md>]
+    consumers_to_update: [<repo names — required when level != none>]
+```
+
+**Outbound**, any task — a claim may carry the evidence-confidence class instead of the three-value
+`confidence:` (`verified-code` / `verified-schema` / `verified-test` / `verified-git` /
+`documented-unverified` / `historical` / `unknown`). Specialists treat anything that is not
+`verified-*` exactly as `confidence: low`.
+
+**Inbound**, multi-repo workspaces only:
+
+```yaml
+  contracts_changed:
+    - contract: <name>
+      change: <one line>
+      backward_compatible: <true | false>
+      consumers_grepped: [<repo>:<path>, …]
+```
+
+**Inbound**, any task — `deferred_work:` lists anything the specialist is *not* doing that someone
+must, each item with the `docs/<AREA>_BACKLOG.md` path it was appended to. A return that names
+deferred work without a backlog path is incomplete.
+
 ## How agents reference this file
 
 - `.claude/agents/<PROJECT_SLUG>-orchestrator.md` requires the outbound block on every Agent-tool call and consumes the inbound block before merging.

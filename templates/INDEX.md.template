@@ -30,6 +30,10 @@
 | Cross-role behavior / acceptance criteria | `roles-and-permissions.md` + role-specific docs | varies | `product-flow` |
 | Docs / agents / skills / rules cleanup | (this file + `ORCHESTRATION_SPOONFEEDER.md`) | n/a | `context-librarian` |
 | Multi-agent handoff format | `HANDOFF_SCHEMA.md` | n/a | `<PROJECT_SLUG>-orchestrator` (issuer) + every specialist (receiver) |
+| What is live where / environments / verified commands | `PROJECT.md` | n/a | everyone, first |
+| Past decisions / failed approaches / bug patterns / corrections | `LEARNINGS.md` | n/a | everyone, §D before the first edit |
+| Vocabulary — the one name per concept | `GLOSSARY.md` | n/a | everyone |
+| "What's pending on <area>?" | `docs/<AREA>_BACKLOG.md` | n/a | `<PROJECT_SLUG>-orchestrator` |
 
 ---
 
@@ -62,6 +66,7 @@
 ## Reference docs (canonical — don't duplicate; link to them)
 
 - Multi-agent handoff schema: `docs/ai-context/HANDOFF_SCHEMA.md`
+- Current truth: `docs/ai-context/PROJECT.md` · Learnings: `docs/ai-context/LEARNINGS.md` · Glossary: `docs/ai-context/GLOSSARY.md`
 - Architecture: `docs/ARCHITECTURE.md`
 - API reference: `docs/API.md`
 - Tech stack: `docs/TECH_STACK.md`

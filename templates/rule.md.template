@@ -58,7 +58,7 @@ A bad rule:
 - "We should always..." (aspirational; not enforced)
 - Pure style preference (lint config does this)
 - Contradicts another rule (have the context-librarian reconcile)
-- Has no `paths` (no signal for agents to read it)
+- Has no `paths` but is path-specific (an unscoped rule loads into every session — reserve that for a truly global rule)
 - Long rationale paragraph (move to canonical doc)
 
 When you've shipped 3-5 rules in this file, stop. Add more only when production teaches you new gotchas. Don't try to anticipate.

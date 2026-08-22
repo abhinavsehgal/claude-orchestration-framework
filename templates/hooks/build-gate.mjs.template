@@ -9,8 +9,9 @@
 //
 // On stop, checks `git status --porcelain` for dirty files matching
 // BUILD_RELEVANT_RE. If any are dirty, runs BUILD_COMMAND. On non-zero exit,
-// emits the build error tail to stdout and exits 2 (blocks stop). If build
-// passes or no relevant files are dirty, exits 0.
+// emits the build error tail to STDERR (Stop hooks surface stderr, not stdout)
+// and exits 2 (blocks stop). If the build passes, no relevant files are dirty,
+// or the cap killed the run (inconclusive), exits 0.
 //
 // === Customization (REQUIRED) ===
 // Edit the constants below to match your stack:
@@ -19,7 +20,7 @@
 //   - DEPS_SENTINEL: a path that proves dependencies are installed; if missing, hook silently skips
 //                    (avoids spurious failures in fresh worktrees that haven't run install)
 //   - GOLDEN_RULE_REF: your CLAUDE.md golden-rule number for "build before commit"
-//   - BUILD_TIMEOUT_MS: cap on the build (default 5min)
+//   - BUILD_TIMEOUT_MS: cap on the build (default 12 min — size to the slowest honest build)
 //
 // Examples:
 //   Next.js / TS:
@@ -81,6 +82,7 @@ function runBuild() {
   const r = spawnSync(BUILD_COMMAND[0], BUILD_COMMAND.slice(1), {
     cwd: REPO_ROOT,
     encoding: "utf-8",
+    // EDIT for your stack: CI=1 quiets most toolchains; NEXT_TELEMETRY_DISABLED is a Next.js example.
     env: { ...process.env, CI: "1", NEXT_TELEMETRY_DISABLED: "1" },
     timeout: BUILD_TIMEOUT_MS,
   });

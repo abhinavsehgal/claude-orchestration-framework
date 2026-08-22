@@ -77,7 +77,7 @@ This separation makes drift impossible. Active docs live in the first two tiers.
 
 The orchestrator is for **medium/complex tasks** — explicitly invoked via `claude --agent <orchestrator-name>`. Plain `claude` stays available for everyday work. Specialists can also be invoked directly via `claude --agent <specialist-name>` for narrow domain work.
 
-Three invocation modes coexist by design. See `06-INVOCATION-MODES.md`.
+Three everyday invocation modes coexist by design (plus headless `claude -p` and dynamic workflows for scripts and sweeps). See `06-INVOCATION-MODES.md`.
 
 ---
 

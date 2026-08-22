@@ -349,4 +349,4 @@ This is documentation enforcement — agents follow the rules because their inst
 - The orchestrator catches return-block violations (missing fields, wrong types)
 - Refusal is a one-shot rejection: if the specialist returns the refusal template, the orchestrator must re-issue with the missing fields — no work happens until the schema is satisfied
 
-If you later want hard runtime enforcement, add a PreToolUse hook on the `Agent` tool that validates the outbound YAML block before letting the call proceed. That's a one-day project; this framework deliberately doesn't ship hooks because the document-only enforcement covers 95% of the value at 5% of the complexity.
+If you later want hard runtime enforcement, add a PreToolUse hook on the `Agent` tool that validates the outbound YAML block before letting the call proceed. That's a one-day project; the framework deliberately ships **no hooks in the default install** (the optional hook templates in Chapter 10 cover other gaps, not schema validation) because the document-only enforcement covers 95% of the value at 5% of the complexity.

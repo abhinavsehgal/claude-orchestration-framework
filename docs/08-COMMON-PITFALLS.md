@@ -16,7 +16,7 @@ The orchestrator has:
 
 Daily work (typo fixes, "what does this function do?", quick prototyping) becomes painful.
 
-**Right answer:** Don't set it as default. Document the three invocation modes in your spoonfeeder. Train the team to use `--agent <orchestrator-name>` for production-sensitive cross-domain work and plain `claude` for everything else.
+**Right answer:** Don't set it as default. Document the invocation modes (Chapter 6) in your spoonfeeder. Train the team to use `--agent <orchestrator-name>` for production-sensitive cross-domain work and plain `claude` for everything else.
 
 ## Pitfall 2: Enabling memory on REVIEW-ONLY agents
 
@@ -156,7 +156,7 @@ The orchestrator should NOT:
 
 **Right answer:** If the orchestrator is doing implementation, your specialists are too narrow. Either broaden a specialist's scope or add a missing one.
 
-## Pitfall 11: Direct push to develop bypassing PR review
+## Pitfall 11: Direct push to the integration branch bypassing PR review
 
 Direct pushes feel faster. They skip:
 - CI / staging deploy verification
@@ -164,9 +164,9 @@ Direct pushes feel faster. They skip:
 - Code review by humans
 - Auditable PR history
 
-For trivial doc changes the cost of a PR is low. For multi-file reorgs, the cost of a broken merge to develop is high (other engineers' worktrees, broken builds, lost time).
+For trivial doc changes the cost of a PR is low. For multi-file reorgs, the cost of a broken merge to the integration branch (`develop`, `main`, whatever your base branch is) is high (other engineers' worktrees, broken builds, lost time).
 
-**Right answer:** Use direct push to develop ONLY when:
+**Right answer:** Use direct push to the integration branch ONLY when:
 - The change is < 5 files AND
 - The change is doc-only OR adds purely-additive code AND
 - You have explicit authorization in the current session
@@ -340,7 +340,7 @@ honest build on a busy machine, not to the fastest one on an idle machine.
 ## Pitfall 24: Many sessions, one working directory
 
 Three agent sessions shared one checkout. One was launched into a stale, detached snapshot of the
-tree and "fixed" code that had already been rewritten. Two ran `npm run build` at once and corrupted
+tree and "fixed" code that had already been rewritten. Two ran the build at once and corrupted
 each other's output directory — every route 500'd with an error that read like a code bug and was
 pure directory collision. Two picked the same migration number.
 
@@ -353,7 +353,7 @@ open PRs.
 
 ## Pitfall 25: Never report a negative from a reader you have not verified can see the whole set
 
-"The generator refused these 336 skills" turned out to mean "the reader that listed the skills was
+"The generator refused these 336 records" turned out to mean "the reader that listed the records was
 silently capped at 1,000 rows and never showed the generator 25% of them." A confident negative
 result, wrong, because the *reader* had a ceiling nobody checked.
 

@@ -74,6 +74,7 @@ Based on what you've observed, recommend whether to add:
 - **`permissions.deny` for built-ins/plugins on main thread** — `.claude/settings.json` rules blocking Explore/Plan/general-purpose/plugin agents from being spawned by the default `claude` session. (Recommend if team members keep accidentally invoking these in non-orchestrator mode when they should be in orchestrator mode.)
 - **`memory: project` on implementation specialists** — for specialists where institutional knowledge accumulates (debugging recipes, schema gotchas). NEVER recommend for REVIEW-ONLY specialists. (Recommend if a specialist has handled 10+ tasks and you can identify recurring patterns it should remember.)
 - **CronCreate scheduled context-refactor** — automatic quarterly cleanup pass. (Recommend if `docs/` accumulates stale material between manual cleanups.)
+- **One of the five shipped hook patterns** (`docs/10-HOOK-HARDENING.md`: rule-surfacing, correction-capture, build-gate, lint-fix, doc-freshness gate) — recommend only the one that closes a rule §9 below shows was violated despite being written down.
 
 For each recommendation, give a one-paragraph justification.
 
@@ -127,15 +128,18 @@ Produce a structured report:
 [findings + proposed fixes]
 
 ## Hardening recommendations
-
-## Platform drift
-
-## Project-truth freshness
 - [ ] Hop limit hook — recommended? Why?
 - [ ] Schema enforcement hook — recommended? Why?
 - [ ] permissions.deny — recommended? Why?
 - [ ] Memory on implementation specialists — recommended for which?
 - [ ] Scheduled context-refactor — recommended?
+- [ ] Shipped hook pattern(s) — which, and which violated rule each closes?
+
+## Platform drift
+[each stale assumption + the doc URL that contradicts it, or "none found — re-verified <date>"]
+
+## Project-truth freshness
+[PROJECT.md §3 rows corrected + new verified-on stamp · LEARNINGS §D items to promote · stale backlog items · glossary drift]
 
 ## Proposed PR
 - Files to update (paths)

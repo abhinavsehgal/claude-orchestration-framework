@@ -1,6 +1,6 @@
 # 06 — Invocation Modes
 
-Three modes coexist by design. Pick by task shape, not by habit.
+Five modes coexist by design — the first three are the everyday ones; headless and dynamic workflows are for scripts and sweeps. Pick by task shape, not by habit.
 
 ## Mode 1: Default `claude` (no flags)
 
@@ -41,7 +41,7 @@ Examples:
 - `claude --agent legal-compliance` — review-only session
 - `claude --agent database` — schema/migration work
 
-Specialist sessions inherit the specialist's `tools` allowlist and `maxTurns` cap. They cannot delegate further (subagents do not spawn other subagents per Claude Code semantics). Use when you know exactly which domain the work lives in and don't need cross-domain coordination.
+Specialist sessions inherit the specialist's `tools` allowlist and `maxTurns` cap. A specialist whose `tools:` omits `Agent` cannot delegate at all; one that has it should not by framework convention (Chapter 3 anti-patterns — nesting is a platform capability now, see Pitfall 18, not a framework design). Use when you know exactly which domain the work lives in and don't need cross-domain coordination.
 
 ## Mode 4: Headless `claude -p` (scripts, CI, cross-repo delegation)
 
@@ -77,7 +77,7 @@ Until then: pick the right mode for the task. If you are about to do anything cr
 
 ## Practical recipe
 
-A well-functioning team uses all three modes:
+A well-functioning team uses all three everyday modes:
 
 ```bash
 # Quick fix (90% of casual work)

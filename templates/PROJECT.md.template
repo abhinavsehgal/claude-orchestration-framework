@@ -34,7 +34,7 @@
 | Branch | Environment | URL | Data store |
 |---|---|---|---|
 | `<PROD_BRANCH>` | production | <url> | <identifier> |
-| `<STAGING_BRANCH>` | staging | <url> | <identifier> |
+| `<BASE_BRANCH>` | staging | <url> | <identifier> |
 
 - **The only deploy path is** <mechanism — e.g. "CI workflow X on push; the host's own git
   integration is disabled">.

@@ -6,7 +6,7 @@ Step-by-step guide for adopting this framework in a real codebase. Plan for ~2-4
 
 - Claude Code installed (`claude --version` should print v2.x or later)
 - A project repository (any tech stack)
-- Read access to this framework at `~/Desktop/claude-orchestration-framework/`
+- This framework cloned somewhere on your disk (the quickstart uses `~/frameworks/claude`; any path works — you paste it into the prompts as `<framework path>`)
 - 2-4 hours of focused time (don't rush this; the foundation lasts years)
 
 ## Phase 0 — Decide if you need this framework (10 min)
@@ -26,18 +26,19 @@ Use this framework if:
 
 ## Phase 1 — Inventory your project (30 min)
 
-Open Claude Code in your project root:
+Open Claude Code in your project root, on a fresh branch (the setup only adds files, but a clean branch makes it easy to throw away):
 
 ```bash
 cd ~/your-project
+git checkout -b setup/claude-orchestration
 claude
 ```
 
-Paste `prompts/INVENTORY-PROMPT.md` (from this framework). Claude will:
+Paste `prompts/INVENTORY-PROMPT.md` (from this framework), replacing `<framework path>`. Claude will:
 - Scan your codebase structure
 - Propose a list of specialists based on your domain boundaries
 - Surface clutter that should be archived
-- Identify your protected branches (main, develop, etc.)
+- Identify your protected branches (`main`, your integration branch, etc.)
 - Identify your tech stack and which MCP servers will be useful
 
 You answer: confirm/adjust the proposed specialist list. This is the foundation of everything that follows.
@@ -47,26 +48,28 @@ You answer: confirm/adjust the proposed specialist list. This is the foundation 
 In the same Claude Code session, paste `prompts/BOOTSTRAP-PROMPT.md`. Reference this framework's path so Claude can read templates:
 
 ```
-The framework lives at /Users/<you>/Desktop/claude-orchestration-framework/.
+The framework lives at <framework path> (e.g. ~/frameworks/claude).
 Read templates from there. Customize for this project: <project-name>.
 ```
 
-Claude will:
+Claude first runs the pre-flight safety checks (backup of any existing `CLAUDE.md` / `.claude/` to `.claude-pre-bootstrap-backup/`, collision and drift detection — Pitfall 16), then will:
 1. Create `.claude/agents/<project>-orchestrator.md` from `templates/orchestrator-agent.md.template`
 2. Create one `.claude/agents/<specialist>.md` per specialist, from the appropriate template
 3. Create `docs/ai-context/HANDOFF_SCHEMA.md` from the template
 4. Create `docs/ai-context/INDEX.md` with task → docs map
 5. Create `docs/ai-context/ORCHESTRATION_SPOONFEEDER.md` with usage guide
 6. Create skeleton `docs/ai-context/<area>-experience.md` files (one per major domain)
-7. Create `CLAUDE.md` at root (the router)
+7. Create `CLAUDE.md` at root (the router, shaped by `templates/CLAUDE.md.template`; merged with a 3-pane diff if one already exists)
 8. Create `docs/_archive/README.md`
 9. Update `.gitignore` with framework-relevant entries
+10. (v1.2) Create the project-truth set — `docs/ai-context/PROJECT.md`, `LEARNINGS.md`, `GLOSSARY.md`, the `.claude/skills/<project>-engineering/SKILL.md` playbook, and one `docs/<AREA>_BACKLOG.md`
+11. Create the `.claude/rules/<domain>.md` files and the two starter skills the inventory proposed (Phases 3–4 below are where you review and extend them)
 
 You verify each file before saving. Claude shouldn't ship anything you haven't read.
 
 ## Phase 3 — Add your first rules (30 min)
 
-The hardest part of this framework is writing useful rules. They take real domain knowledge.
+The hardest part of this framework is writing useful rules. They take real domain knowledge. Bootstrap created the rule files the inventory proposed; this phase is where you read them critically and add what the inventory missed.
 
 In the Claude Code session, ask:
 
@@ -88,7 +91,7 @@ Aim for 3-5 rules per file at first. You'll add more over time as production tea
 
 ## Phase 4 — Add 1-2 starter skills (20 min)
 
-Most projects benefit from at least these skills:
+Most projects benefit from at least these skills (bootstrap creates them alongside the `<project>-engineering` playbook; review them here, or ask for them if they were skipped):
 - `investigate-bug/SKILL.md`
 - `build-feature/SKILL.md`
 
@@ -105,7 +108,7 @@ You can add more skills later as patterns recur (qa-flow, compliance-review, aud
 Run these checks:
 
 ```bash
-# All agents register
+# All agents register (or type /agents inside a session)
 claude agents
 
 # Doc-link sweep — find broken refs
@@ -145,7 +148,14 @@ If anything is off:
 
 Don't add hooks yet. Get the documentation enforcement working through 2-3 real tasks first.
 
-## Phase 7 — Document for your team (20 min)
+## Phase 7 — Commit, open a PR, document for your team (20 min)
+
+```bash
+git add CLAUDE.md .claude/ docs/ .gitignore     # the backup folder is gitignored
+git commit -m "chore: bootstrap Claude Code orchestration framework"
+git push -u origin setup/claude-orchestration
+gh pr create --base <your-base-branch> --title "Bootstrap Claude orchestration framework"
+```
 
 Add to your project's existing onboarding docs:
 - "We use Claude Code with a custom orchestration setup. See `docs/ai-context/ORCHESTRATION_SPOONFEEDER.md`."
@@ -156,7 +166,7 @@ Optional: announce in your team chat with a 30-second demo of the orchestrator h
 
 ## Phase 8 — Add hardening as needed (optional, after 2 weeks)
 
-After running real tasks for a couple weeks, decide if you need:
+After running real tasks for a couple weeks, decide if you need any of the five shipped hook patterns (`docs/10-HOOK-HARDENING.md` + `templates/hooks/` — rule-surfacing, correction-capture, build-gate, lint-fix, doc-freshness gate; install into `.claude/settings.json`, then restart the session — Pitfall 17), or one of these bespoke ones:
 
 ### Hop limits via PreToolUse hook
 
@@ -195,6 +205,7 @@ Every 3 months, dedicate a session to:
 3. Reconcile any rule conflicts
 4. Update orientation maps for areas where reality has drifted
 5. Verify all agents still register after dependency updates
+6. Run `prompts/REFINEMENT-PROMPT.md` — it re-checks platform drift (Pitfall 18) and `PROJECT.md` freshness
 
 ## Common time-sinks to avoid
 

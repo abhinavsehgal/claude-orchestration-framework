@@ -2,6 +2,26 @@
 
 All notable changes to the Claude Orchestration Framework. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.1] — 2026-08-22
+
+### Fixed — same-day audit of v1.2.0 (stale text, contradictions, one runtime defect)
+
+- **`templates/workspace/settings.json.snippet` wired a hook script the workspace never receives** (`correction-capture-prompt.mjs`) — every Stop in a workspace session would have errored. Hooks stanza removed; the snippet is the allowlist + deny block only. `bootstrap.sh` now generates it from the manifest.
+- **`docs/06-INVOCATION-MODES.md` still said "subagents do not spawn other subagents"**; `templates/SPOONFEEDER.md.template` still said rules are not auto-loaded. Both corrected to the verified facts (Pitfall 18).
+- **BOOTSTRAP never created the rule files or the starter skills** the docs said it creates — new Step 12 does, from `rule.md.template` / `skill.md.template`; Step 9 names `CLAUDE.md.template`; Step 10 gitignores `.claude/settings.local.json`; a greenfield-answers block stands in for the inventory on new projects. INVENTORY gains an existing-config scan (Step F2) and the `<repo>-orchestrator` naming rule.
+- **`templates/HANDOFF_SCHEMA.md.template` lacked the v1.2 optional fields** chapter 4 documents and the workspace copies — added (`schema_version` unchanged).
+- Counts and cross-links: "17 pitfalls" → 26, "10 chapters" → 12 + quickstart, "four hook patterns" → five, chapter 10 pattern/rule order, REFINEMENT output template sections, README tree; PDF marked as the v1.1.2 render everywhere.
+- Stack-as-default wording removed (`npm run build`, `develop`, `node_modules`, `.next`, "Auth/RLS") — placeholders or one-of-several examples now; one leftover domain word in Pitfall 25.
+- `lint-fix.mjs` skip directories are a `SKIP_PREFIXES` constant; `build-gate.mjs` header comments matched to v1.2 behaviour; `doc-freshness-gate.mjs` gained Rule 12 (a push in another repository is not this repo's push) and `<REPO_NAME_FRAGMENT>`.
+
+### Added
+
+- **`templates/workspace/bootstrap.sh.template`** — creates the whole workspace layer from a filled `workspace.json`: copies every file, fills `<WORKSPACE_*>`/`<REPO_LIST>`, generates `.gitignore` and the `settings.json` deny block from the manifest's paths, fills the service-map rows, and lists what remains to fill by hand. Quickstart Part 3 step 2 uses it; the manual `cp` block stays as the long path.
+- Chapter 12: the "scanned recursively" and "subdirectory skills load on touch" claims now cite the docs that state them. README: companion-editions section; FAQ answer for Copilot points at the companion edition and the dual-tool setup.
+- `claude agents` (CLI subcommand) verified locally as real; `/agents` is the in-session form.
+
+---
+
 ## [1.2.0] — 2026-08-22
 
 ### Added — what three more months of production use taught

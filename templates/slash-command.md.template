@@ -86,25 +86,25 @@ The reference implementation is the `/commit-push-pr` workflow from Boris Cherny
 
 ```yaml
 ---
-description: Validate → commit → push → open/update PR against develop. Enforces golden rules §1 (no main pushes) and §2 (build before commit).
+description: Validate → commit → push → open/update PR against <BASE_BRANCH>. Enforces golden rules §1 (no <PROD_BRANCH> pushes) and §2 (build before commit).
 allowed-tools: Bash, Read, Edit
 argument-hint: [optional commit summary override]
 ---
 ```
 
-Pre-flight context: current branch, working tree status, diff stat against develop, build-relevant files dirty list, existing PR JSON, recent commits, develop's recent commit style. (~7 inline bash invocations.)
+Pre-flight context: current branch, working tree status, diff stat against `<BASE_BRANCH>`, build-relevant files dirty list, existing PR JSON, recent commits, `<BASE_BRANCH>`'s recent commit style. (~7 inline bash invocations.)
 
 Workflow:
-1. Branch safety (refuse main/master/develop)
+1. Branch safety (refuse `<PROD_BRANCH>` and `<BASE_BRANCH>` — work happens on a feature branch)
 2. Build gate (skip if no build-relevant files dirty; else run build)
 3. Diff review (cross-check that PreToolUse rule-surfacing already ran)
 4. Selective staging (NEVER `git add -A`; deny `.env*`, secrets)
 5. Conventional Commit message with project trailer
 6. Push without `--force` / `--no-verify`
-7. Open or update PR against develop via `gh pr create`
+7. Open or update PR against `<BASE_BRANCH>` via `gh pr create`
 8. Compact final report
 
-Hard NOs: never push to main/master/develop, never force-push, never amend (always create new commit), never stage secrets, never auto-merge.
+Hard NOs: never push to `<PROD_BRANCH>` or `<BASE_BRANCH>` directly, never force-push, never amend (always create new commit), never stage secrets, never auto-merge.
 
 ---
 

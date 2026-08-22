@@ -4,9 +4,25 @@ Paste this AFTER you have completed the INVENTORY-PROMPT pass and approved the p
 
 ---
 
-I've reviewed the inventory. Now bootstrap the Claude Orchestration Framework on this project. Use the templates from `<framework path>` (default: `/Users/<you>/Desktop/claude-orchestration-framework/templates/`). Read those template files before generating anything.
+I've reviewed the inventory. Now bootstrap the Claude Orchestration Framework on this project. Use the templates from `<framework path>/templates/` (wherever you cloned the framework — the quickstart uses `~/frameworks/claude`). Read those template files before generating anything.
 
 ---
+
+
+> **Greenfield (no INVENTORY pass)?** The steps below refer to "inventory section N". If you skipped the
+> inventory because the project is new, paste this block first and fill it — each item stands in for
+> the corresponding inventory section:
+>
+> ```
+> GREENFIELD ANSWERS
+> 1. Identity: <one sentence — what the product is, for whom, the stack in five words>
+> 2. Roles: <role → permission boundary, one line each>
+> 3. Specialists: <repo-slug>-orchestrator + <4–8 domain-shaped specialists; mark REVIEW-ONLY ones>
+> 4. Rule files: <domain → the path globs it guards, one line each>
+> 5. Sources of truth: <concept → canonical helper/table, if any exist yet>
+> 6. Build / test / dev commands: <copied from the real config, or "none yet">
+> 7. Branches: base = <BASE_BRANCH>, production = <PROD_BRANCH>
+> ```
 
 ## ⚠ PRE-FLIGHT SAFETY CHECKS (run BEFORE creating anything)
 
@@ -194,7 +210,7 @@ Use `templates/SPOONFEEDER.md.template`. Customize the invocation modes section 
 
 This file goes at the repo root. Should be UNDER 200 lines.
 
-**If `CLAUDE.md` doesn't exist:** create it. Include:
+**If `CLAUDE.md` doesn't exist:** create it from `templates/CLAUDE.md.template` (Step 11 names the v1.2 golden rules it carries). Include:
 - 1-paragraph project identity
 - Golden rules (always include "never push to protected branches without owner approval")
 - Mandatory workflow (numbered steps)
@@ -238,13 +254,15 @@ Append (don't overwrite) these entries to the existing `.gitignore`:
 test-results/
 logs/
 
-# Vercel/CLI env exports — broader pattern
+# Env-file backups / CLI env exports — broader pattern
 .env*.bak*
 .env*staging_tmp
 .env*tmp
 
 # Claude Code worktrees (local-only)
 .claude/worktrees/
+# Personal permissions / MCP allowlists — per machine, never shared
+.claude/settings.local.json
 .claude/launch.json
 ```
 
@@ -287,6 +305,20 @@ command copied from the real build config, never guessed:
 Use `<framework path>/templates/CLAUDE.md.template` as the shape for Step 9's router — its golden
 rules 9–12 (corrections → rules, deferred work written, production push freshens docs, one name per
 concept) are the v1.2.0 additions.
+
+### Step 12 — Create the rule files and starter skills the inventory proposed
+
+- One `.claude/rules/<name>.md` per rule file in inventory section 4, from
+  `<framework path>/templates/rule.md.template` — `paths:` globs verified against real files, each
+  hard rule with its file:line evidence, nothing generic. (Pre-flights 2 and 3 already checked these
+  names and globs for collisions.) Delete the "Notes for the rule author" section before saving.
+- `.claude/skills/investigate-bug/SKILL.md` and `.claude/skills/build-feature/SKILL.md` from
+  `<framework path>/templates/skill.md.template`, customised to this project's stack and roles
+  (the `<project-slug>-engineering` playbook from Step 11 is the one they share).
+
+Show me each file before saving. If the inventory proposed no rule files (or this is a greenfield
+project with no inventory yet), say so and skip — never invent a rule without evidence; the runbook's
+Phase 3 adds rules once there is code to cite.
 
 ## Constraints
 

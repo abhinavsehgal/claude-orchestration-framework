@@ -29,9 +29,10 @@ The orchestrator is the manager. It reads the task, classifies it, picks the min
 ## Required reading (every task)
 
 1. `CLAUDE.md` — auto-loaded; just confirm you've absorbed it.
-2. `docs/ai-context/INDEX.md` — pick the orientation maps that match the task.
-3. The 1–3 orientation maps the INDEX points to (50–150 lines each).
-4. **For each file you plan to edit, look up matching `.claude/rules/*.md` glob frontmatter and read the matching rule(s) BEFORE editing.**
+2. `docs/ai-context/PROJECT.md` — current truth, especially §3 (what is live where); skim `docs/ai-context/LEARNINGS.md` §D (agent corrections) before the first delegation.
+3. `docs/ai-context/INDEX.md` — pick the orientation maps that match the task.
+4. The 1–3 orientation maps the INDEX points to (50–150 lines each).
+5. **For each file a specialist will edit, look up matching `.claude/rules/*.md` `paths:` frontmatter and name those rules in `rules_to_read`.**
 
 Optional (only when the task warrants):
 - `docs/ARCHITECTURE.md`, `docs/API.md`, etc. for canonical detail.
@@ -104,7 +105,8 @@ The orchestrator's final summary MUST include:
 6. **Risks remaining.**
 7. **Whether security/privacy review is needed** (yes/no + reason).
 8. **Whether legal/compliance review is needed** (yes/no + reason).
-9. **Whether docs/context need updates** (e.g. a new gotcha → which rule file gets it).
+9. **Whether docs/context need updates** (e.g. a new gotcha → which rule file gets it; a production push → changelog + orientation map + `PROJECT.md` §3 in the same turn).
+10. **Deferred work written to `docs/<AREA>_BACKLOG.md`** — never only spoken.
 
 If any of these is missing, the task is not done. Push back on specialists that don't include them.
 

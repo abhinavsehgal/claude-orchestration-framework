@@ -33,8 +33,8 @@ a subdirectory:
 |---|---|---|
 | `CLAUDE.md` | At launch | **On demand** — when Claude reads a file inside that child |
 | `.claude/rules/*.md` | At launch (unscoped) / on match (`paths:`) | On demand, same as above |
-| `.claude/agents/` | Yes (scanned recursively) | **No** — unless the child is added with `--add-dir` |
-| `.claude/skills/` | Yes | Yes — once Claude has touched a file in that child |
+| `.claude/agents/` | Yes (scanned recursively — *Subagents* doc) | **No** — unless the child is added with `--add-dir` |
+| `.claude/skills/` | Yes | Yes — once Claude has touched a file in that child (*Monorepos and large repos* doc: "skills from every subdirectory Claude touches during the session") |
 | `.claude/settings.json` — hooks, permissions | **Only from the start directory** | **Never** — a child's build-gate / doc-gate / deny rules do not fire in a workspace session |
 | Auto-memory | Keyed to the workspace's git repo | Not the child's |
 
@@ -104,6 +104,8 @@ human carrying context between two terminals is cheaper than the layer.
 
 ### Layout
 
+`templates/workspace/bootstrap.sh.template` creates all of this from a filled `workspace.json` (it fills the per-repo placeholders, generates `.gitignore` and the `settings.json` deny block from the manifest's paths, fills the service-map rows, and lists what is left for you to fill by hand). The layout it produces:
+
 ```
 workspace/                              ← its own git repo
 ├── CLAUDE.md                           ← workspace router (templates/workspace/CLAUDE.md.template)
@@ -118,8 +120,9 @@ workspace/                              ← its own git repo
 │   │   └── cross-repo-contracts.md     ← the contract-change protocol (unscoped: loads every session)
 │   ├── scripts/
 │   │   ├── sync-repos.sh               ← clone/fetch every repo in the manifest
-│   │   └── delegate.sh                 ← run a child repo's orchestrator in the child's own session
-│   └── settings.json                   ← workspace hooks + the Bash allowlist for the two scripts
+│   │   ├── delegate.sh                 ← run a child repo's orchestrator in the child's own session
+│   │   └── return-schema.json          ← the return block as JSON Schema, for `claude -p --json-schema`
+│   └── settings.json                   ← Bash allowlist for the two scripts + the deny block on every child path (hooks optional)
 ├── docs/ai-context/
 │   ├── SERVICE_MAP.md                  ← repo → owns → produces → consumes → orchestrator name
 │   ├── CONTRACTS.md                    ← every cross-repo contract: producer, consumers, spec location, versioning rule

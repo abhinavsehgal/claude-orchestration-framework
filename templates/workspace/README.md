@@ -1,9 +1,10 @@
 # templates/workspace/ — multi-repo workspace layer (framework Chapter 12)
 
-Copy into a NEW repo (the workspace), fill the `<PLACEHOLDERS>`, run `sync-repos.sh`.
+Copy into a NEW repo (the workspace). **Short path:** copy `workspace.json.template` to `workspace.json`, fill it, then run `bash bootstrap.sh.template <framework path>` in the new repo — it copies every file below into place, fills the per-repo placeholders, generates `.gitignore` and the `settings.json` deny block from the manifest, and lists what is left to fill by hand. **Long path:** the table below.
 
 | File | Goes to |
 |---|---|
+| `bootstrap.sh.template` | (run it — creates everything below) |
 | `CLAUDE.md.template` | `CLAUDE.md` |
 | `workspace.json.template` | `workspace.json` |
 | `gitignore.template` | `.gitignore` |

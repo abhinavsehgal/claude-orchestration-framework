@@ -9,13 +9,16 @@
 ```
 CLAUDE.md (router, ~150 lines) ── always auto-loaded
    │
+   ├── docs/ai-context/PROJECT.md ───── current truth — what is live where (read first)
+   ├── docs/ai-context/LEARNINGS.md ─── decisions / failures / corrections (skim §D)
    ├── docs/ai-context/INDEX.md ─────── task → docs + rules + agent map
    │      │
    │      └── docs/ai-context/*.md ──── orientation maps (50-150 lines each)
    │             │
    │             └── docs/*.md ──────── canonical full-detail docs
+   │                   └── docs/<AREA>_BACKLOG.md ── deferred work, written not spoken
    │
-   ├── .claude/rules/*.md ─────────────── path-globbed rules (read by agents)
+   ├── .claude/rules/*.md ─────────────── path-globbed rules (loaded when a matching file is read)
    ├── .claude/agents/*.md ────────────── orchestrator + specialists
    └── .claude/skills/*/SKILL.md ─────── repeatable workflows
 ```
@@ -29,6 +32,9 @@ CLAUDE.md (router, ~150 lines) ── always auto-loaded
 | Layer | Where | What it does |
 |---|---|---|
 | Router | `CLAUDE.md` | Auto-loaded by Claude Code. Tiny. Points to everything else. |
+| Project truth | `docs/ai-context/PROJECT.md` | What is live where, verified commands, sources of truth. Date-stamped. |
+| Learnings | `docs/ai-context/LEARNINGS.md` | Decisions, failed approaches, bug patterns, corrections. |
+| Backlogs | `docs/<AREA>_BACKLOG.md` | Deferred work — must be written before a turn that names it ends. |
 | Routing index | `docs/ai-context/INDEX.md` | Task type → minimum docs + rules + agent. |
 | Spoonfeeder | `docs/ai-context/ORCHESTRATION_SPOONFEEDER.md` | This file — for humans. |
 | Handoff schema | `docs/ai-context/HANDOFF_SCHEMA.md` | Bidirectional schema for orchestrator ↔ specialist. |
@@ -43,7 +49,7 @@ CLAUDE.md (router, ~150 lines) ── always auto-loaded
 
 ## Invocation modes — which `claude` command to run
 
-Two modes coexist in this project. Pick by task shape, not by habit. **There is no project-level default agent; you choose per session.**
+Three everyday modes coexist in this project (plus headless `claude -p` for scripts — see the framework's Chapter 6). Pick by task shape, not by habit. **There is no project-level default agent; you choose per session.**
 
 ### Default — `claude` (no flags)
 
@@ -80,7 +86,7 @@ Also valid for narrow work in a single domain. Examples:
 - `claude --agent <BACKEND_SPECIALIST_NAME>`
 - `claude --agent <QA_SPECIALIST_NAME>`
 
-Specialist sessions inherit the specialist's `tools` allowlist and `maxTurns` cap. They cannot delegate further.
+Specialist sessions inherit the specialist's `tools` allowlist and `maxTurns` cap. By convention they do not delegate further — a specialist that needs another domain returns `recommended_next_agent` to the orchestrator.
 
 ### Why we are not making the orchestrator the default
 
@@ -93,9 +99,10 @@ Until we add hooks or `permissions.deny`: **pick the right mode for the task**.
 ## Required reading before any non-trivial task
 
 1. `CLAUDE.md` (auto-loaded — already done by Claude Code).
-2. `docs/ai-context/INDEX.md` — pick the right docs.
-3. The 1–2 orientation maps the INDEX points to.
-4. The matching `.claude/rules/*.md` files for the paths you intend to edit.
+2. `docs/ai-context/PROJECT.md` §3 (what is live where) and a skim of `LEARNINGS.md` §D.
+3. `docs/ai-context/INDEX.md` — pick the right docs.
+4. The 1–2 orientation maps the INDEX points to.
+5. The matching `.claude/rules/*.md` files for the paths you intend to edit.
 
 That's it. Stop adding more unless the task genuinely needs more.
 
@@ -176,7 +183,8 @@ A task is complete only when the agent reports:
 6. Risks remaining.
 7. Whether security/privacy review is needed.
 8. Whether legal/compliance review is needed.
-9. Whether docs/context need updates.
+9. Whether docs/context need updates (a production push → changelog + orientation map + `PROJECT.md` §3, same turn).
+10. Deferred work written to `docs/<AREA>_BACKLOG.md` — never only spoken.
 
 If any of these is missing, the task is not done.
 
@@ -187,7 +195,7 @@ If any of these is missing, the task is not done.
 - **Don't load every doc for every task.** Pick the minimum.
 - **Don't use every agent for every task.** Pick the minimum.
 - **Don't broadly refactor while fixing a bug.** Make the smallest safe change.
-- **Don't change DB / RLS without tracing source of truth.**
+- **Don't change the schema or permission rules without tracing the source of truth.**
 - **Don't claim compliance is solved without qualified-reviewer sign-off.**
 - **Don't put debug notes in root `CLAUDE.md`.** Put debugging in PR descriptions.
 - **Don't `@`-import large docs into root `CLAUDE.md`.** Imports are still loaded into context.
@@ -197,7 +205,7 @@ If any of these is missing, the task is not done.
 
 ## How rules actually load (important)
 
-Rules in `.claude/rules/*.md` are **NOT auto-loaded**. Each agent's instructions tell it: *"Before editing any file, check whether its path matches `.claude/rules/*.md` glob frontmatter. If yes, read the matching rule file first and report which rule files were read."*
+A rule in `.claude/rules/*.md` with a `paths:` frontmatter list is loaded by Claude Code itself the moment Claude **reads** a file matching one of its globs (a rule without `paths:` loads at session start, like `CLAUDE.md`). One gap remains: a brand-new file that is *written* without ever being read matches nothing. So each agent's instructions still say: *"Before editing any file, check whether its path matches a `.claude/rules/*.md` `paths:` glob. If yes, read the matching rule file first and report which rule files were read."* — and the optional rule-surfacing hook (`docs/ai-context/HOOKS.md`, if installed) closes the write-without-read gap mechanically.
 
 The orchestrator's Definition of Done explicitly requires the list of rule files read. If you see a task summary with no rules listed, the agent skipped that step — push back.
 

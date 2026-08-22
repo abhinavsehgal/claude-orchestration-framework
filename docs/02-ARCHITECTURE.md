@@ -20,20 +20,27 @@ your-project/
 │   │   ├── <domain-2>.md
 │   │   └── ...
 │   ├── skills/                            ← repeatable workflows
+│   │   ├── <project>-engineering/SKILL.md ← (v1.2) the six-gate playbook
 │   │   ├── <workflow-1>/SKILL.md
 │   │   └── ...
-│   ├── settings.json                      ← project-wide Claude Code settings
-│   └── settings.local.json                ← personal permissions allowlist (gitignored if sensitive)
+│   ├── scripts/                           ← (optional, Chapter 10) hook scripts
+│   ├── settings.json                      ← project-wide Claude Code settings (team-shared, committed)
+│   └── settings.local.json                ← personal permissions allowlist (gitignored)
 │
 ├── docs/
 │   ├── ai-context/                        ← orientation maps (read by agents)
 │   │   ├── INDEX.md                       ← task → docs router
 │   │   ├── HANDOFF_SCHEMA.md              ← bidirectional handoff schema
 │   │   ├── ORCHESTRATION_SPOONFEEDER.md   ← human usage guide
+│   │   ├── PROJECT.md                     ← (v1.2) current truth — what is live where
+│   │   ├── LEARNINGS.md                   ← (v1.2) decisions / failures / bug patterns / corrections
+│   │   ├── GLOSSARY.md                    ← (v1.2) one name per concept
+│   │   ├── HOOKS.md                       ← (optional) what is enforced mechanically
 │   │   └── <area>-experience.md           ← per-domain orientation, 50-150 lines each
 │   ├── ARCHITECTURE.md                    ← canonical refs (full detail)
 │   ├── API.md
 │   ├── <YOUR-OTHER-CANONICAL-DOCS>.md
+│   ├── <AREA>_BACKLOG.md                  ← (v1.2) deferred work, one per feature area
 │   └── _archive/                          ← frozen historical
 │       ├── README.md                      ← archive convention
 │       └── <YYYY-MM>/                     ← dated reports, post-mortems
@@ -61,7 +68,7 @@ Does NOT contain:
 
 One markdown file per agent. Frontmatter declares `name`, `description`, `tools`, `maxTurns`, optionally `model`/`memory`/etc. Body declares the agent's contract: when to use, when not, required reading, I CAN, I CANNOT, definition of done, plus the handoff validation + return schema sections.
 
-Always includes exactly one orchestrator. Specialists are added based on the project's natural domain boundaries (typically 5–12 specialists for a medium-complexity codebase).
+Always includes exactly one orchestrator. Specialists are added based on the project's natural domain boundaries (typically 4–10 for a medium-complexity codebase; sizing table in `03-AGENTS-GUIDE.md`).
 
 See `03-AGENTS-GUIDE.md` for how to design agents.
 
@@ -96,6 +103,8 @@ Special files in `docs/ai-context/`:
 - `INDEX.md` — the master router (task → docs + rules + agent map)
 - `HANDOFF_SCHEMA.md` — the bidirectional handoff schema (this framework's central artifact)
 - `ORCHESTRATION_SPOONFEEDER.md` — the human-facing usage guide
+- `PROJECT.md`, `LEARNINGS.md`, `GLOSSARY.md` — (v1.2) the project-truth set; see `11-PROJECT-TRUTH-AND-LEARNINGS.md`
+- `HOOKS.md` (optional) — what the installed hooks enforce (`10-HOOK-HARDENING.md`)
 - `MIGRATION_LEDGER.md` (optional) — tracks doc/structure migration progress
 - `LEGACY_BACKUP.md` (optional) — frozen pre-refactor snapshot
 
@@ -163,7 +172,7 @@ For monorepos, you can either:
 - Have one `.claude/` at the root that knows about all packages, or
 - Have one `.claude/` per package + a root `.claude/` that orchestrates across packages
 
-The first is simpler. The second is more isolated. Pick based on whether tasks routinely cross package boundaries. Two platform facts decide what goes where (verified 2026-08-22): per-package `CLAUDE.md` and `.claude/rules/` load **on demand** when Claude reads files in that package, but `.claude/settings.json` (hooks, permission rules) loads **only from the directory you start in**. So gates live with the code they gate, and a root session does not inherit a package's hooks. The official *monorepos and large codebases* page covers `claudeMdExcludes`, sparse worktrees and per-package skills.
+The first is simpler. The second is more isolated. Pick based on whether tasks routinely cross package boundaries. Two platform facts decide what goes where (verified 2026-08-22): per-package `CLAUDE.md` and `.claude/rules/` load **on demand** when Claude reads files in that package, but `.claude/settings.json` (hooks, permission rules) loads **only from the directory you start in**, and a package's `.claude/agents/` are visible only to sessions started in that package (or added with `--add-dir`). So gates live with the code they gate, and a root session does not inherit a package's hooks or agents. The official *monorepos and large codebases* page covers `claudeMdExcludes`, sparse worktrees and per-package skills.
 
 ### Multiple repositories (web + mobile + microservices)
 

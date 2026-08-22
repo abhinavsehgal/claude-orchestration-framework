@@ -97,7 +97,7 @@ More than 15 is a smell — you're probably making them too narrow.
 |---|---|
 | `product-flow` | Acceptance criteria, cross-role behavior, requirement clarification (LIGHT EDITS ONLY) |
 | `qa-functional` | Tests across the system |
-| `security-privacy` | Auth/RLS/sensitive-data review (REVIEW-ONLY) |
+| `security-privacy` | Auth / permissions / sensitive-data review (REVIEW-ONLY) |
 | `legal-compliance` | Regulatory review for relevant laws (REVIEW-ONLY) |
 | `release-devops` | Build/deploy/cron/env |
 | `context-librarian` | Maintains `.claude/`, `docs/ai-context/`, archives drift |

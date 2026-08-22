@@ -1,5 +1,5 @@
 {
-  "_comment": "Workspace-level .claude/settings.json. Hooks and permissions load ONLY from the start directory, so this is the only enforcement a workspace session has. The deny block is what makes 'the workspace never writes to a child' a runtime fact (Mechanism A is the only write path).",
+  "_comment": "Workspace-level .claude/settings.json. Hooks and permissions load ONLY from the start directory, so this is the only enforcement a workspace session has. The deny block is what makes 'the workspace never writes to a child' a runtime fact (Mechanism A is the only write path). Hooks are optional here — the workspace builds nothing; to add correction-capture, copy templates/hooks/correction-capture-prompt.mjs.template to .claude/scripts/ and wire it as in templates/hooks/settings.json.snippet.",
   "permissions": {
     "allow": [
       "Bash(.claude/scripts/sync-repos.sh *)",
@@ -16,16 +16,6 @@
       "Agent(Explore)",
       "Agent(Plan)",
       "Agent(general-purpose)"
-    ]
-  },
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          { "type": "command", "command": "node .claude/scripts/correction-capture-prompt.mjs" }
-        ]
-      }
     ]
   }
 }

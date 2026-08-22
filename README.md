@@ -1,6 +1,6 @@
 # Claude Orchestration Framework
 
-> **Version 1.2.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
+> **Version 1.2.1** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
 >
 > **v1.2.0 (2026-08-22) — three months of production use, folded back in.** Two new chapters: **11 — Project truth, learnings and the evidence ladder** (the docs a fresh agent reads first, the six-gate playbook, "deferred work must be written", "every production push freshens the docs") and **12 — Multi-repo workspaces** (web + mobile + microservices in separate repos: three layers, two delegation mechanisms, `templates/workspace/`). Nine new pitfalls. A fifth hook (doc-freshness gate). **And two v1.0 platform claims corrected:** subagents *can* nest now, and `.claude/rules/` with `paths:` frontmatter is native — the framework's `applies_to:` field is renamed `paths:` (the hook reads both). Every platform claim in v1.2.0 carries a verified-on date.
 >
@@ -37,10 +37,10 @@ This framework gives you all of that without runtime hooks or external dependenc
 ```
 claude-orchestration-framework/
 ├── README.md                           ← this file
-├── Claude-Orchestration-Framework.pdf  ← consolidated 57-page printable
+├── Claude-Orchestration-Framework.pdf  ← consolidated 57-page printable (v1.1.2 render — Chapters 11–12 not yet included)
 ├── LICENSE
 │
-├── docs/                                ← the framework explained (10 chapters)
+├── docs/                                ← the framework explained (quickstart + 12 chapters)
 │   ├── 00-QUICKSTART.md                 ← START HERE: step-by-step onboarding for any project, incl. many repos
 │   ├── 00-QUICKSTART.html                ← the same guide as one offline page with tabs for all three editions (open in a browser)
 │   │                                    live: https://abhinavsehgal.github.io/claude-orchestration-framework/
@@ -49,9 +49,9 @@ claude-orchestration-framework/
 │   ├── 03-AGENTS-GUIDE.md               ← how to design orchestrator + specialists (per-stack tables)
 │   ├── 04-HANDOFF-SCHEMA.md             ← bidirectional schema + worked examples (web / mobile / REVIEW-ONLY)
 │   ├── 05-RULES-AND-SKILLS.md           ← path-globbed rules + repeatable workflows
-│   ├── 06-INVOCATION-MODES.md           ← claude vs --agent vs specialist mode
+│   ├── 06-INVOCATION-MODES.md           ← claude vs --agent vs specialist vs headless -p vs dynamic workflows
 │   ├── 07-FOLDER-STRUCTURE.md           ← three-tier doc organization
-│   ├── 08-COMMON-PITFALLS.md            ← 17 hard-won lessons
+│   ├── 08-COMMON-PITFALLS.md            ← 26 hard-won lessons
 │   ├── 09-RUNBOOK.md                    ← step-by-step bootstrap (~2-4 hours)
 │   ├── 10-HOOK-HARDENING.md             ← (v1.1) optional hook-based enforcement — five patterns as of v1.2
 │   ├── 11-PROJECT-TRUTH-AND-LEARNINGS.md← (v1.2) PROJECT.md / LEARNINGS.md / backlogs, the evidence ladder, the six-gate playbook
@@ -88,6 +88,7 @@ claude-orchestration-framework/
     │   ├── settings.json.snippet                    ← sample wiring for all five
     │   └── HOOKS.md.template                        ← orientation note for docs/ai-context/HOOKS.md
     └── workspace/                        ← (v1.2) the multi-repo layer (Chapter 12)
+        ├── bootstrap.sh.template            ← (v1.2) creates the whole layer from a filled workspace.json
         ├── CLAUDE.md.template · workspace.json.template · gitignore.template
         ├── orchestrator-agent.md.template · contract-guardian-agent.md.template · service-mapper-agent.md.template
         ├── cross-repo-contracts.md.template · SERVICE_MAP.md.template · CONTRACTS.md.template
@@ -180,7 +181,7 @@ claude
 # If existing config is detected, you'll be asked to confirm per-file decisions
 
 # 7. Verify (in terminal)
-claude agents                  # should list all your project specialists
+claude agents                  # should list all your project specialists (or /agents inside a session)
 [ -f .claude-pre-bootstrap-backup/CLAUDE.md ] && diff .claude-pre-bootstrap-backup/CLAUDE.md CLAUDE.md
 npm run build                  # or whatever your build is — should still pass
 
@@ -189,7 +190,7 @@ claude --agent <project-slug>-orchestrator
 # Give it a real bug or small feature; verify the handoff schema works end-to-end
 
 # 9. Commit and PR (note: .claude-pre-bootstrap-backup/ is gitignored)
-git add .claude/ docs/ai-context/ docs/_archive/ CLAUDE.md .gitignore
+git add .claude/ docs/ai-context/ docs/_archive/ docs/*_BACKLOG.md CLAUDE.md .gitignore
 git commit -m "chore: bootstrap Claude Code orchestration framework"
 git push -u origin setup/claude-orchestration
 gh pr create --base <your-base-branch> --title "Bootstrap Claude orchestration framework"
@@ -225,7 +226,7 @@ No other dependencies. The framework is markdown + Claude Code's built-in subage
 Three things change per project:
 
 1. **Project name + slug** (used to name the orchestrator: `<slug>-orchestrator`)
-2. **Specialist list** (5-10 specialists matching your project's domain boundaries)
+2. **Specialist list** (typically 4-10 specialists matching your project's domain boundaries — sizing table in `docs/03-AGENTS-GUIDE.md`)
 3. **Path globs in rules** (matched to your actual code paths)
 
 Everything else (the handoff schema, the universal evidence rule, the failure_condition pattern, the three-tier docs structure, the invocation modes) stays the same across projects.
@@ -258,8 +259,8 @@ No. This is a community framework built on top of Claude Code's documented subag
 **Q: Will it work with the Claude API directly (not Claude Code)?**
 The orchestrator-worker pattern and handoff schema concepts translate, but the runtime enforcement (`tools`, `maxTurns`, `Agent(...)` allowlists) is Claude Code specific. For pure API usage, you'd need to implement those with hooks or middleware.
 
-**Q: Does it work with Cursor / GitHub Copilot / other AI assistants?**
-The documentation patterns are portable, but `tools` allowlists and subagent isolation aren't. You'd lose most of the runtime enforcement layer.
+**Q: Does it work with GitHub Copilot / Cursor / other AI assistants?**
+For GitHub Copilot, use the companion edition below — same schema, same principles, Copilot's own surfaces (`.github/agents`, `.github/instructions`, `.github/skills`, `.github/hooks`). Running both editions in one repo is supported: VS Code reads `.claude/rules`, `.claude/agents`, `.claude/skills` and `.claude/settings.json` hooks natively, so one corpus can serve two thin routers. For other assistants the documentation patterns port; the runtime enforcement (`tools` allowlists, subagent isolation, hooks) does not.
 
 **Q: Can I use this on a monorepo?**
 Yes. See `docs/02-ARCHITECTURE.md` § "Variations" for monorepo, multi-product, and mobile+web split patterns.
@@ -272,6 +273,13 @@ The framework doesn't change Claude Code's data handling. Use Claude Code's `per
 
 **Q: Can I share this with another engineer who isn't on my team?**
 This repo is public. The framework is free to use — see `LICENSE`.
+
+## Companion editions
+
+All three share the handoff schema, the evidence rule, the three-tier docs, the project-truth set and the multi-repo workspace layer; they differ only in the tool's surfaces. Released together on 2026-08-22.
+
+- [`github-copilot-orchestration-framework`](https://github.com/abhinavsehgal/github-copilot-orchestration-framework) v1.2.0 — GitHub Copilot (VS Code, CLI, cloud agent).
+- [`copilot-ios-orchestration-framework`](https://github.com/abhinavsehgal/copilot-ios-orchestration-framework) v1.1.0 — Copilot, pre-filled for native iOS.
 
 ## License
 

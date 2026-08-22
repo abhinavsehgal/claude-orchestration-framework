@@ -32,7 +32,7 @@ That cost is justified ONLY when documentation enforcement has demonstrably fail
 
 ---
 
-## The four hook patterns worth knowing
+## The five hook patterns worth knowing
 
 These are tested patterns, ordered by leverage-per-line-of-code.
 
@@ -64,11 +64,19 @@ These are tested patterns, ordered by leverage-per-line-of-code.
 
 ### Pattern 3 — `Stop` build-gate (medium leverage, narrow scope)
 
-**Closes:** the gap where commits land with a broken build because "run `npm run build` before commit" was procedural and skipped.
+**Closes:** the gap where commits land with a broken build because "run the build before commit" was procedural and skipped.
 
 **Mechanism:** when the agent tries to stop, a hook checks `git status --porcelain` for changes to build-relevant files (TypeScript / Python / Go / etc., depending on stack). If any are dirty, it runs the build. On non-zero exit, it emits the build error tail and exits 2 (blocks stop). If the build passes or no relevant files are dirty, it exits 0.
 
 **Why it's narrow:** the build is slow (often 30+ seconds), so the hook MUST gate on whether build-relevant files are dirty. Otherwise it punishes documentation-only turns with full-stack builds.
+
+### Pattern 4 — `PostToolUse` lint-fix (low leverage, very low cost)
+
+**Closes:** the "last 10% formatting drift" gap where small lint-fixable issues leak into CI and produce noise PR comments.
+
+**Mechanism:** after every `Write|Edit|MultiEdit`, a hook runs the project's auto-fix linter (e.g. `eslint --fix`, `ruff --fix`, `gofmt`) on the file just touched. **Always exits 0** — lint problems must NEVER block an edit; build correctness is enforced separately by Pattern 3.
+
+**Why it's worth it despite low leverage:** zero behavioural surface for the model, eliminates a class of CI noise. But also: skip if your project already runs auto-fix on save in IDEs or has a pre-commit hook outside Claude Code.
 
 ### Pattern 5 — `Stop` doc-freshness gate (high leverage for teams that deploy often) — v1.2.0
 
@@ -85,14 +93,6 @@ Two guards are load-bearing, and both generalise to any transcript-scanning hook
 *data* (a doc that quotes `git push origin main` must not trip the gate), and a push is its own
 top-level command segment that *starts* with the verb — never a substring inside an `echo` or a
 comment.
-
-### Pattern 4 — `PostToolUse` lint-fix (low leverage, very low cost)
-
-**Closes:** the "last 10% formatting drift" gap where small lint-fixable issues leak into CI and produce noise PR comments.
-
-**Mechanism:** after every `Write|Edit|MultiEdit`, a hook runs the project's auto-fix linter (e.g. `eslint --fix`, `ruff --fix`, `gofmt`) on the file just touched. **Always exits 0** — lint problems must NEVER block an edit; build correctness is enforced separately by Pattern 3.
-
-**Why it's worth it despite low leverage:** zero behavioural surface for the model, eliminates a class of CI noise. But also: skip if your project already runs auto-fix on save in IDEs or has a pre-commit hook outside Claude Code.
 
 ---
 
@@ -150,6 +150,10 @@ When writing a new hook:
 
 Hook entries added to `.claude/settings.json` mid-session do **not** activate until a new session starts. This is the most surprising fact about hook deployment. After installing hooks: `/exit` and re-run `claude` for them to take effect. Verify in a brand-new session, not the one that installed them.
 
+### Rule 8 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
+
+`.local.json` is per-machine (gitignored). Hooks meant to enforce team rules belong in the shared `settings.json` so every contributor and CI run gets them. Leave `.local.json` for personal MCP allowlists.
+
 ### Rule 9 — A killed check is inconclusive, not failed
 
 A build-gate whose build is killed by the hook's own timeout has produced **no failure evidence**.
@@ -180,10 +184,6 @@ gate twice in one session. Track where the shell is per command segment (`cd`, s
 `git -C`, `gh --repo`) and count a push only when its effective directory is inside the hook's own
 repo (`payload.cwd`); treat an unknowable directory (`cd $VAR`) as not ours. The template carries this.
 
-### Rule 8 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
-
-`.local.json` is per-machine (gitignored). Hooks meant to enforce team rules belong in the shared `settings.json` so every contributor and CI run gets them. Leave `.local.json` for personal MCP allowlists.
-
 ---
 
 ## Where to put the scripts
@@ -195,6 +195,7 @@ repo (`payload.cwd`); treat an unknowable directory (`cd $VAR`) as not ours. The
     correction-capture-prompt.mjs
     build-gate.mjs
     lint-fix.mjs
+    doc-freshness-gate.mjs
   settings.json                         ← team-shared hook wiring (committed)
   rules/                                ← unchanged
     *.md
@@ -206,7 +207,7 @@ Plus an orientation note at `docs/ai-context/HOOKS.md` explaining each hook's pu
 
 ## Verification — how to know it's working
 
-You cannot verify hooks in the session that installed them (Rule 6). The verification recipe:
+You cannot verify hooks in the session that installed them (Rule 7). The verification recipe:
 
 1. **Direct script tests** — run each script with synthetic stdin:
    ```bash
@@ -222,7 +223,7 @@ You cannot verify hooks in the session that installed them (Rule 6). The verific
 
 3. **Negative test** — edit a file that should NOT trigger. Confirm no spurious output. Hooks that fire on every turn quickly become noise.
 
-4. **Failure-mode test** — for the build-gate, deliberately introduce a TypeScript error. Confirm the agent can't end the turn until the error is fixed.
+4. **Failure-mode test** — for the build-gate, deliberately introduce a compile/type error in your stack. Confirm the agent can't end the turn until the error is fixed.
 
 5. **Loop-guard test** — for any `Stop` hook, introduce the trigger condition, fix it, ensure the second stop attempt succeeds (not blocked again).
 
@@ -245,7 +246,7 @@ Removal is one stanza-deletion in `.claude/settings.json`. Don't sentimentally k
 
 ## Templates
 
-The framework ships generic templates for all four hook patterns at `templates/hooks/`:
+The framework ships generic templates for all five hook patterns at `templates/hooks/`:
 
 | Template | Purpose |
 |---|---|
@@ -254,7 +255,7 @@ The framework ships generic templates for all four hook patterns at `templates/h
 | `templates/hooks/build-gate.mjs.template` | Pattern 3 — generic build-gate script (parameterized for stack) |
 | `templates/hooks/lint-fix.mjs.template` | Pattern 4 — generic lint-fix script (parameterized for stack) |
 | `templates/hooks/doc-freshness-gate.mjs.template` | Pattern 5 — production push ⇒ changelog touched in the same turn (v1.2.0) |
-| `templates/hooks/settings.json.snippet` | Sample wiring for all four hooks |
+| `templates/hooks/settings.json.snippet` | Sample wiring for all five hooks |
 | `templates/hooks/HOOKS.md.template` | Orientation note for `docs/ai-context/HOOKS.md` |
 | `templates/slash-command.md.template` | Generic slash-command template (e.g. `/commit-push-pr`) |
 
