@@ -15,11 +15,15 @@
 // Stack-agnostic. Customise the three constants below.
 
 import { readFileSync } from "node:fs";
+import { resolve, isAbsolute } from "node:path";
+import { homedir } from "node:os";
 
 // ---- Customise ---------------------------------------------------------------
 const PROTECTED_BRANCH = "<PROTECTED_BRANCH>";        // e.g. "main", "production", "release"
 const CHANGELOG_PATH = "<CHANGELOG_PATH>";            // e.g. "docs/CHANGELOG.md", "CHANGELOG.md"
 const STATE_DOC_PATH = "<STATE_DOC_PATH>";            // e.g. "docs/ai-context/PROJECT.md" (named in the reminder only)
+// <REPO_NAME_FRAGMENT>: a substring of this repo's GitHub name (e.g. "acme-api") so a
+// `gh pr merge --repo other/thing` in this session is not mistaken for OUR merge.
 // ------------------------------------------------------------------------------
 
 function readStdin() {
@@ -44,6 +48,17 @@ function main() {
 
   const branchRe = new RegExp(`\\b${PROTECTED_BRANCH.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
 
+  // Rule 12 — a push in ANOTHER repository is not this repo's production push.
+  // (A release of a sibling repo from a scratchpad clone fired this gate twice.)
+  const REPO_ROOT = resolve(payload.cwd || process.cwd());
+  const insideRepo = (dir) => { const d = resolve(dir); return d === REPO_ROOT || d.startsWith(REPO_ROOT + "/"); };
+  const expandPath = (raw, from) => {
+    let p = raw.trim().replace(/^["']|["']$/g, "");
+    p = p.replace(/^~(?=\/|$)/, homedir()).replace(/\$HOME\b/, homedir()).replace(/\$PWD\b/, from);
+    if (/[$`]/.test(p)) return null;                 // unresolvable — unknown location
+    return isAbsolute(p) ? p : resolve(from, p);
+  };
+
   const isProdPush = (cmd) => {
     if (typeof cmd !== "string") return false;
     // Rule 10: a heredoc body is DATA (a doc quoting `git push origin main` is not
@@ -51,12 +66,25 @@ function main() {
     if (cmd.includes("<<")) return false;
     // Rule 10: a real push is its OWN top-level command segment that STARTS with
     // the verb — never a substring inside an echo/printf argument or a comment.
+    // Walk segments IN ORDER tracking where the shell is: `cd X` moves it
+    // (subshell parens stripped), `git -C X push` targets X. A push whose
+    // effective directory is outside this repo — or unknowable — is ignored.
     const segments = cmd.split(/\n|;|\|\||&&|\|/);
+    let dir = REPO_ROOT;
     for (const seg of segments) {
-      const s = seg.trim().replace(/^sudo\s+/, "");
+      const s = seg.trim().replace(/^[(\s]+/, "").replace(/^sudo\s+/, "");
+      const cdm = s.match(/^cd\s+(\S+)/);
+      if (cdm) { dir = expandPath(cdm[1], dir); continue; }
       if (!branchRe.test(s)) continue;
-      if (/^git\s+push\b/.test(s)) return true;
-      if (/^gh\s+pr\s+merge\b/.test(s)) return true;
+      const gitC = s.match(/^git\s+-C\s+(\S+)\s+push\b/);
+      const target = gitC ? expandPath(gitC[1], dir) : dir;
+      if (target === null || !insideRepo(target)) continue;
+      if (/^git\s+(-C\s+\S+\s+)?push\b/.test(s)) return true;
+      if (/^gh\s+pr\s+merge\b/.test(s)) {
+        const repoFlag = s.match(/--repo[= ]\s*(\S+)/);
+        if (repoFlag && !repoFlag[1].toLowerCase().includes("<REPO_NAME_FRAGMENT>".toLowerCase())) continue;
+        return true;
+      }
       // <ADD_OTHER_PROMOTION_VERBS> — e.g. /^glab\s+mr\s+merge\b/ for GitLab.
     }
     return false;

@@ -172,6 +172,14 @@ anchored at the start — a `git push` buried inside an `echo` argument is not a
 permissive on real corrections, but every false fire on a benign sentence erodes the team's trust
 in the whole hook layer. Tighten the same day.
 
+### Rule 12 — A push in another repository is not this repo's push
+
+A transcript-scanning gate sees every shell command the session ran, including `cd ../other-repo &&
+git push origin main`. Releasing three sibling repos from scratchpad clones fired the doc-freshness
+gate twice in one session. Track where the shell is per command segment (`cd`, subshell `cd`,
+`git -C`, `gh --repo`) and count a push only when its effective directory is inside the hook's own
+repo (`payload.cwd`); treat an unknowable directory (`cd $VAR`) as not ours. The template carries this.
+
 ### Rule 8 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
 
 `.local.json` is per-machine (gitignored). Hooks meant to enforce team rules belong in the shared `settings.json` so every contributor and CI run gets them. Leave `.local.json` for personal MCP allowlists.
