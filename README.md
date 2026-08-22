@@ -8,6 +8,8 @@
 >
 > **Purpose.** A reusable multi-agent orchestration setup for [Claude Code](https://docs.claude.com/en/docs/claude-code) that prevents cascading hallucinations, enforces evidence-based handoffs between agents, and makes Claude usable on production codebases by teams. Tech-stack agnostic — drops into any project (web, mobile, backend, ML, infra) in 2-4 hours.
 
+> **Read the onboarding guide online:** https://abhinavsehgal.github.io/claude-orchestration-framework/ — all three editions, one page.
+
 ---
 
 ## Who this is for
@@ -41,6 +43,7 @@ claude-orchestration-framework/
 ├── docs/                                ← the framework explained (10 chapters)
 │   ├── 00-QUICKSTART.md                 ← START HERE: step-by-step onboarding for any project, incl. many repos
 │   ├── 00-QUICKSTART.html                ← the same guide as one offline page with tabs for all three editions (open in a browser)
+│   │                                    live: https://abhinavsehgal.github.io/claude-orchestration-framework/
 │   ├── 01-PRINCIPLES.md                 ← seven core principles
 │   ├── 02-ARCHITECTURE.md               ← .claude/ + docs/ layout (with monorepo / mobile+web / multi-product variants)
 │   ├── 03-AGENTS-GUIDE.md               ← how to design orchestrator + specialists (per-stack tables)
