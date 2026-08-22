@@ -39,6 +39,7 @@ claude-orchestration-framework/
 ├── LICENSE
 │
 ├── docs/                                ← the framework explained (10 chapters)
+│   ├── 00-QUICKSTART.md                 ← START HERE: step-by-step onboarding for any project, incl. many repos
 │   ├── 01-PRINCIPLES.md                 ← seven core principles
 │   ├── 02-ARCHITECTURE.md               ← .claude/ + docs/ layout (with monorepo / mobile+web / multi-product variants)
 │   ├── 03-AGENTS-GUIDE.md               ← how to design orchestrator + specialists (per-stack tables)
@@ -196,7 +197,7 @@ Estimated time: **2-4 hours** (split across phases — see `docs/09-RUNBOOK.md`)
 
 Read the **PDF** (`Claude-Orchestration-Framework.pdf`) — 57 pages, self-contained **as of v1.1.2** (it does not yet include Chapters 11–12; regenerate is tracked in the changelog). Or browse the markdown files in `docs/` for clickable cross-links.
 
-The most actionable single chapter is **`docs/09-RUNBOOK.md`**.
+The most actionable single chapter is **`docs/00-QUICKSTART.md`** — every step with *what / why / paste this / you know it worked when*, through the multi-repo workspace. `docs/09-RUNBOOK.md` is its long form.
 
 ---
 
