@@ -1,0 +1,114 @@
+#!/usr/bin/env node
+// doc-freshness-gate.mjs — Stop hook (Pattern 5, docs/10-HOOK-HARDENING.md).
+//
+// Closes the rule "every production push freshens the docs — same turn, no
+// exceptions" (docs/11-PROJECT-TRUTH-AND-LEARNINGS.md). A note-on-the-wall rule
+// is skippable under deadline pressure; this hook makes it deterministic. If a
+// production push (a change landing on PROTECTED_BRANCH) happened THIS session
+// and CHANGELOG_PATH was not edited afterwards, it blocks the stop and injects
+// the doc-update checklist.
+//
+// Stop-hook IO contract (Rule 6): reminder → stderr; exit 2 → block; exit 0 → allow.
+// Fail-silent (Rule 1): any unexpected error exits 0.
+// Loop guard (Rule 4): stop_hook_active === true → allow.
+//
+// Stack-agnostic. Customise the three constants below.
+
+import { readFileSync } from "node:fs";
+
+// ---- Customise ---------------------------------------------------------------
+const PROTECTED_BRANCH = "<PROTECTED_BRANCH>";        // e.g. "main", "production", "release"
+const CHANGELOG_PATH = "<CHANGELOG_PATH>";            // e.g. "docs/CHANGELOG.md", "CHANGELOG.md"
+const STATE_DOC_PATH = "<STATE_DOC_PATH>";            // e.g. "docs/ai-context/PROJECT.md" (named in the reminder only)
+// ------------------------------------------------------------------------------
+
+function readStdin() {
+  try { return readFileSync(0, "utf8"); } catch { return ""; }
+}
+
+function main() {
+  let payload;
+  try { payload = JSON.parse(readStdin() || "{}"); } catch { process.exit(0); }
+
+  if (payload.stop_hook_active === true) process.exit(0);
+
+  const transcriptPath = payload.transcript_path;
+  if (!transcriptPath) process.exit(0);
+
+  let raw;
+  try { raw = readFileSync(transcriptPath, "utf8"); } catch { process.exit(0); }
+
+  const lines = raw.split("\n").filter(Boolean);
+  let lastPushIdx = -1;
+  let lastChangelogIdx = -1;
+
+  const branchRe = new RegExp(`\\b${PROTECTED_BRANCH.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+
+  const isProdPush = (cmd) => {
+    if (typeof cmd !== "string") return false;
+    // Rule 10: a heredoc body is DATA (a doc quoting `git push origin main` is not
+    // a push). A real push is never authored as a heredoc.
+    if (cmd.includes("<<")) return false;
+    // Rule 10: a real push is its OWN top-level command segment that STARTS with
+    // the verb — never a substring inside an echo/printf argument or a comment.
+    const segments = cmd.split(/\n|;|\|\||&&|\|/);
+    for (const seg of segments) {
+      const s = seg.trim().replace(/^sudo\s+/, "");
+      if (!branchRe.test(s)) continue;
+      if (/^git\s+push\b/.test(s)) return true;
+      if (/^gh\s+pr\s+merge\b/.test(s)) return true;
+      // <ADD_OTHER_PROMOTION_VERBS> — e.g. /^glab\s+mr\s+merge\b/ for GitLab.
+    }
+    return false;
+  };
+
+  const collectToolUses = (msg) => {
+    const out = [];
+    const content = msg?.message?.content;
+    if (Array.isArray(content)) {
+      for (const block of content) {
+        if (block && block.type === "tool_use" && block.name) {
+          out.push({ name: block.name, input: block.input || {} });
+        }
+      }
+    }
+    return out;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    let entry;
+    try { entry = JSON.parse(lines[i]); } catch { continue; }
+    for (const tu of collectToolUses(entry)) {
+      if (tu.name === "Bash" && isProdPush(tu.input.command)) lastPushIdx = i;
+      if (
+        (tu.name === "Edit" || tu.name === "Write" || tu.name === "MultiEdit") &&
+        typeof tu.input.file_path === "string" &&
+        tu.input.file_path.endsWith(CHANGELOG_PATH)
+      ) {
+        lastChangelogIdx = i;
+      }
+    }
+  }
+
+  if (lastPushIdx === -1) process.exit(0);            // no production push this session
+  if (lastChangelogIdx > lastPushIdx) process.exit(0); // docs freshened after the push
+
+  const reminder = `<system-reminder>
+DOC-FRESHNESS GATE — a production push (a change landing on \`${PROTECTED_BRANCH}\`) happened this session, but the docs were not freshened afterwards.
+
+Before finishing, update the FULL doc set for what shipped:
+  1. ${CHANGELOG_PATH} — add the release entry (this is the anchor the gate checks).
+  2. The affected docs/ai-context/*.md orientation map(s) for the area that changed.
+  3. Any affected .claude/rules/*.md hard rules the change alters or adds.
+  4. ${STATE_DOC_PATH} — the "what is live where" table, if the production STATE changed (new live feature, flag flip, migration applied). Re-stamp its freshness date.
+
+A future agent (fresh, no transcript) sees ONLY what is in git. If a fact lives only in this conversation, it is lost.
+
+If NO production push actually occurred (you pushed to a non-production branch, or the command was a dry-run/example), say so and stop again — the loop guard lets you past.
+</system-reminder>`;
+
+  process.stderr.write(reminder);
+  process.exit(2);
+}
+
+try { main(); } catch { process.exit(0); }

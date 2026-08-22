@@ -4,7 +4,7 @@ How to design the orchestrator and specialists for your project.
 
 ## The orchestrator
 
-Every project has exactly **one** orchestrator. Naming convention: `<project-name>-orchestrator` (e.g. `acme-orchestrator`, `glowgrades-orchestrator`).
+Every project has exactly **one** orchestrator. Naming convention: `<project-name>-orchestrator` (e.g. `acme-orchestrator`, `payments-orchestrator`).
 
 ### Responsibilities
 
@@ -236,6 +236,6 @@ When in doubt: don't add. It's easier to split a specialist later than to delete
 
 ❌ **Specialists with no `tools:` field.** They inherit everything, defeating defense-in-depth. Always declare `tools` explicitly.
 
-❌ **Specialists that delegate to other specialists.** Per Claude Code semantics, subagents cannot spawn subagents. If a specialist needs another specialist's input, it returns to the orchestrator with `recommended_next_agent` and lets the orchestrator chain the work.
+❌ **Specialists that delegate to other specialists.** Subagents *can* spawn subagents (up to a configurable depth — see Pitfall 18), but a specialist that does so has become an un-audited orchestrator: the handoff schema, the evidence rule and the orchestrator's return-validation are all bypassed one level down. By framework convention a specialist returns to the orchestrator with `recommended_next_agent` and lets the orchestrator chain the work. The only sanctioned nesting is orchestrator → orchestrator (Chapter 12, multi-repo), where both hops carry the full schema.
 
 ❌ **Specialists whose "I CAN" includes "approve production deploys."** That's the project owner's call, not an agent's.

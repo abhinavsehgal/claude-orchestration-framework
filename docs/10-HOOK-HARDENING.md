@@ -36,11 +36,17 @@ That cost is justified ONLY when documentation enforcement has demonstrably fail
 
 These are tested patterns, ordered by leverage-per-line-of-code.
 
+> **v1.2.0 note on Pattern 1.** `.claude/rules/*.md` with `paths:` frontmatter is now loaded by the
+> platform itself when Claude *reads* a matching file (Pitfall 18). That covers most of what this
+> hook did. Keep the hook for the one documented gap — a new file *written* without a prior read —
+> and point it at the same `paths:` field so there is one source of truth. If your team never
+> writes files blind, delete the hook.
+
 ### Pattern 1 — `PreToolUse` rule-surfacing (highest leverage)
 
 **Closes:** the gap where agents skip "before editing, read the matching `.claude/rules/*.md`." This rule appears in every framework deployment and is the most-skipped one under deadline pressure.
 
-**Mechanism:** before any `Write|Edit|MultiEdit` tool call, a hook script reads the `applies_to:` glob frontmatter of every `.claude/rules/*.md`, matches it against the path being edited, and emits the matching rule body to stdout. Claude Code injects that stdout as a `<system-reminder>` into the model's context before the edit fires.
+**Mechanism:** before any `Write|Edit|MultiEdit` tool call, a hook script reads the `paths:` glob frontmatter of every `.claude/rules/*.md`, matches it against the path being edited, and emits the matching rule body to stdout. Claude Code injects that stdout as a `<system-reminder>` into the model's context before the edit fires.
 
 **Why it's the highest leverage:** 
 - Already-written rules become unmissable
@@ -63,6 +69,22 @@ These are tested patterns, ordered by leverage-per-line-of-code.
 **Mechanism:** when the agent tries to stop, a hook checks `git status --porcelain` for changes to build-relevant files (TypeScript / Python / Go / etc., depending on stack). If any are dirty, it runs the build. On non-zero exit, it emits the build error tail and exits 2 (blocks stop). If the build passes or no relevant files are dirty, it exits 0.
 
 **Why it's narrow:** the build is slow (often 30+ seconds), so the hook MUST gate on whether build-relevant files are dirty. Otherwise it punishes documentation-only turns with full-stack builds.
+
+### Pattern 5 — `Stop` doc-freshness gate (high leverage for teams that deploy often) — v1.2.0
+
+**Closes:** the gap where a production push lands and the docs that describe production are not
+updated, so the next agent (fresh, no transcript) acts on a stale picture (Pitfall 21).
+
+**Mechanism:** when the agent tries to stop, the hook walks the session transcript for two events —
+the last *production push* (a `git push` / `gh pr merge` whose own command segment references the
+protected branch) and the last edit to the project's changelog. If a push happened and the changelog
+was not touched *after* it, the hook exits 2 with the full doc-update checklist on stderr. Loop-guarded
+with `stop_hook_active`; the agent can reply "that was not a production push" and stop.
+
+Two guards are load-bearing, and both generalise to any transcript-scanning hook: a heredoc body is
+*data* (a doc that quotes `git push origin main` must not trip the gate), and a push is its own
+top-level command segment that *starts* with the verb — never a substring inside an `echo` or a
+comment.
 
 ### Pattern 4 — `PostToolUse` lint-fix (low leverage, very low cost)
 
@@ -103,7 +125,7 @@ Hook stdout becomes part of the model's context. A 32 KB rule file dumped twice 
 
 ### Rule 5 — Order matters in `Stop` arrays
 
-If you have two `Stop` hooks (e.g. correction-capture + build-gate), order them with the lighter / more-likely-to-fire one first. The first hook to exit 2 wins; the second never runs in that cycle. Putting build-gate (slow) first means correction-capture only runs on green builds.
+If you have several `Stop` hooks (correction-capture + build-gate + doc-freshness), order them with the lighter / more-likely-to-fire one first. The first hook to exit 2 wins; the second never runs in that cycle. Putting build-gate (slow) first means correction-capture only runs on green builds. The shipped order is correction-capture → build-gate → doc-freshness.
 
 ### Rule 6 — Stop hooks deliver via stderr, PreToolUse via stdout
 
@@ -127,6 +149,28 @@ When writing a new hook:
 ### Rule 7 — Settings.json is loaded once at session start
 
 Hook entries added to `.claude/settings.json` mid-session do **not** activate until a new session starts. This is the most surprising fact about hook deployment. After installing hooks: `/exit` and re-run `claude` for them to take effect. Verify in a brand-new session, not the one that installed them.
+
+### Rule 9 — A killed check is inconclusive, not failed
+
+A build-gate whose build is killed by the hook's own timeout has produced **no failure evidence**.
+Distinguish `status === null` (timeout / signal) from a non-zero exit; exit 0 silently on the former
+and let CI be the authority. A 5-minute cap on a 4-minute build, on a busy machine, produced an
+alarm loop every stop for a week (Pitfall 23). Size the cap to the slowest honest run.
+
+### Rule 10 — Quoted text is data: strip fences, inline code and heredoc bodies before matching
+
+Every transcript-scanning hook (correction-capture, doc-freshness) must ignore markdown code
+fences, inline code spans and heredoc bodies before it pattern-matches. A test plan that *quotes* a
+correction phrase, or a doc that *shows* a `git push` command, is not the event itself. And match
+shell commands per top-level segment (`split` on `;`, `&&`, `||`, `|`, newline) with the verb
+anchored at the start — a `git push` buried inside an `echo` argument is not a push (Pitfall 22).
+
+### Rule 11 — Anchor correction regexes; a false positive costs more than a miss
+
+`you already` matched *"you already have access"*. Anchor the verb to what follows
+(`you already (did|changed|broke|said)`), never bare. The framework deliberately leans slightly
+permissive on real corrections, but every false fire on a benign sentence erodes the team's trust
+in the whole hook layer. Tighten the same day.
 
 ### Rule 8 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
 
@@ -166,7 +210,7 @@ You cannot verify hooks in the session that installed them (Rule 6). The verific
 2. **Fresh-session integration test** — `/exit` and start a new Claude Code session. Edit a file matching a rule glob. Confirm the rule body appears as a `<system-reminder>` before the edit fires. If it doesn't appear:
    - Check `.claude/settings.json` is valid JSON (`node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json'))"`)
    - Check the script runs standalone without errors
-   - Check the path you're editing actually matches some rule's `applies_to`
+   - Check the path you're editing actually matches some rule's `paths`
 
 3. **Negative test** — edit a file that should NOT trigger. Confirm no spurious output. Hooks that fire on every turn quickly become noise.
 
@@ -201,6 +245,7 @@ The framework ships generic templates for all four hook patterns at `templates/h
 | `templates/hooks/correction-capture-prompt.mjs.template` | Pattern 2 — generic correction-capture script |
 | `templates/hooks/build-gate.mjs.template` | Pattern 3 — generic build-gate script (parameterized for stack) |
 | `templates/hooks/lint-fix.mjs.template` | Pattern 4 — generic lint-fix script (parameterized for stack) |
+| `templates/hooks/doc-freshness-gate.mjs.template` | Pattern 5 — production push ⇒ changelog touched in the same turn (v1.2.0) |
 | `templates/hooks/settings.json.snippet` | Sample wiring for all four hooks |
 | `templates/hooks/HOOKS.md.template` | Orientation note for `docs/ai-context/HOOKS.md` |
 | `templates/slash-command.md.template` | Generic slash-command template (e.g. `/commit-push-pr`) |
@@ -216,3 +261,4 @@ Each template has placeholders marked `<UPPERCASE_LIKE_THIS>` for stack-specific
 - `docs/08-COMMON-PITFALLS.md` § Pitfall 3 — why documentation isn't enforcement
 - `docs/08-COMMON-PITFALLS.md` § Pitfall 17 — settings.json loaded once at session start
 - `templates/hooks/` — drop-in scripts and configs
+- `docs/11-PROJECT-TRUTH-AND-LEARNINGS.md` — the doc-freshness rule Pattern 5 enforces

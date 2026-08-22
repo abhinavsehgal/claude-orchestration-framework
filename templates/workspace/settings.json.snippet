@@ -1,0 +1,31 @@
+{
+  "_comment": "Workspace-level .claude/settings.json. Hooks and permissions load ONLY from the start directory, so this is the only enforcement a workspace session has. The deny block is what makes 'the workspace never writes to a child' a runtime fact (Mechanism A is the only write path).",
+  "permissions": {
+    "allow": [
+      "Bash(.claude/scripts/sync-repos.sh *)",
+      "Bash(.claude/scripts/delegate.sh *)",
+      "Bash(git -C * status*)",
+      "Bash(git -C * log*)",
+      "Bash(git -C * diff*)"
+    ],
+    "deny": [
+      "Edit(./<REPO_1_PATH>/**)",
+      "Write(./<REPO_1_PATH>/**)",
+      "Edit(./<REPO_2_PATH>/**)",
+      "Write(./<REPO_2_PATH>/**)",
+      "Agent(Explore)",
+      "Agent(Plan)",
+      "Agent(general-purpose)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "node .claude/scripts/correction-capture-prompt.mjs" }
+        ]
+      }
+    ]
+  }
+}

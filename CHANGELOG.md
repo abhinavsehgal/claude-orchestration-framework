@@ -2,6 +2,39 @@
 
 All notable changes to the Claude Orchestration Framework. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] — 2026-08-22
+
+### Added — what three more months of production use taught
+
+- **`docs/11-PROJECT-TRUTH-AND-LEARNINGS.md`** — the failure class v1.0 missed: a fresh agent knows only what is in git, and git recorded code, not truth. Specifies three knowledge stores (`PROJECT.md` with a date-stamped "what is live where" table; `LEARNINGS.md` with decisions / failed approaches / bug patterns / agent corrections; per-area backlogs), the "deferred work must be written, not spoken" rule, the "every production push freshens the docs in the same turn" rule, the six-gate engineering playbook, the evidence-confidence taxonomy (`verified-*` / `documented-unverified` / `historical` / `unknown`), the proof ladder, and the multi-client parity rules (one functional source of truth; same heading ⇒ same endpoint; one brain; grep every consumer; never hard-depend on an undeployed route).
+- **`docs/12-MULTI-REPO-WORKSPACES.md`** — web + mobile + microservices in separate repos. Three layers (per-repo install → shared plugin → workspace repo), the verified table of what loads from a parent directory (child `CLAUDE.md`/rules on demand; child hooks/settings never), two delegation mechanisms (child's own `claude -p` session for writes — hooks fire; read-only cross-repo specialists for investigation), two additive handoff fields (`repo:`, `contract_impact:` / `contracts_changed:`), the cross-repo contract protocol, and a one-afternoon POC recipe. Answers "do we need a fourth framework?" — no.
+- **Nine pitfalls (18–26):** platform drift (re-verify quarterly); a rule file is a claim, not evidence; deferred work in prose vanishes; production push without doc freshening; correction-regex false positives; a killed check is inconclusive; many sessions on one working directory; never report a negative from a capped reader; two words for one thing ships bugs.
+- **Templates:** `CLAUDE.md.template` (the router itself — v1.0 only described it), `PROJECT.md.template`, `LEARNINGS.md.template`, `BACKLOG.md.template`, `GLOSSARY.md.template`, `engineering-playbook-skill.md.template`, `hooks/doc-freshness-gate.mjs.template` (Pattern 5), and the whole `templates/workspace/` set (router, manifest, orchestrator + two read-only specialists, contract rule, service map, contracts doc, `sync-repos.sh`, `delegate.sh`, `return-schema.json`, settings).
+- **Chapter 10:** Pattern 5 (doc-freshness gate); Rules 9 (a killed check is inconclusive), 10 (strip fences / inline code / heredoc bodies before matching; match commands per top-level segment), 11 (anchor correction regexes).
+- **Chapter 6:** Mode 4 headless `claude -p` (loads the directory's hooks/agents/rules unless `--bare`; `--json-schema` for structured returns) and Mode 5 dynamic workflows.
+- **Chapter 4:** optional additive fields — `repo`, `contract_impact`, `contracts_changed`, `deferred_work`, and the evidence-confidence class on claims. `schema_version` stays 1.
+- **Prompts:** BOOTSTRAP Step 11 generates the project-truth set; REFINEMENT gains §8 platform drift and §9 project-truth freshness.
+
+### Changed
+
+- **`applies_to:` → `paths:`** in the rule template and every doc. `paths:` is Claude Code's native path-scoped rule field (rules load when a matching file is read); the framework-private name is retired. `surface-matching-rules.mjs` reads `paths:` and, for un-migrated files, `applies_to:`. Pattern 1 is now documented as covering only the write-without-read gap.
+- **`build-gate.mjs`:** 12-minute cap (was 5) and `timedOut` handling — a run killed by the cap exits 0 (no failure evidence) instead of blocking with a warnings-only tail.
+- **`correction-capture-prompt.mjs`:** bare `you already` anchored to a past-tense verb; it had matched "you already have access".
+- **`settings.json.snippet`:** Stop order is now correction-capture → build-gate → doc-freshness-gate.
+- **Pitfall 4 and Chapter 3:** corrected — subagents can spawn subagents (default depth three below the main conversation). The framework's flat-tree *convention* stands as a design choice, with orchestrator → orchestrator nesting sanctioned for Chapter 12.
+- **Chapter 2 Variations:** monorepo guidance now states the verified load rules and points to the official large-codebases page; new "Multiple repositories" section points to Chapter 12.
+- **README:** "Where this came from" counts refreshed; every lesson was required to survive the test "any team, any stack, any domain hits this" before inclusion.
+
+### Known gap
+
+- `Claude-Orchestration-Framework.pdf` is still the v1.1.2 render (57 pages). Chapters 11–12 are markdown-only until the PDF is regenerated.
+
+### Provenance
+
+Same production codebase as v1.0/v1.1, now at 12 agents / 14 rules / 10 skills / 5 hooks and two clients of one backend. Platform facts were re-verified against the official Claude Code docs on 2026-08-22 (memory, sub-agents, large-codebases, headless pages); the verified-on date is printed wherever a fact appears, because Pitfall 18 is the lesson that made this release necessary.
+
+---
+
 ## [1.1.2] — 2026-05-06
 
 ### Fixed (P0 — silent delivery failure)

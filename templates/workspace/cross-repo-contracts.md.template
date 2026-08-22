@@ -1,0 +1,61 @@
+---
+name: cross-repo-contracts
+description: The contract-change protocol for every handoff that touches a producer/consumer boundary. Unscoped — loads into every workspace session.
+---
+
+# Cross-Repo Contracts — Hard Rules
+
+> Multi-client parity (framework Chapter 11) applied across repository boundaries. The workspace
+> orchestrator enforces these on every handoff; `contract-guardian` verifies them with evidence.
+
+## Hard rules
+
+### Producer first, additive only, deployed before any consumer depends on it
+
+**Why:** repos deploy on different clocks and an installed client can be older OR newer than the
+server. A consumer that reads a field the producer has not deployed yet fails silently in
+production — request succeeds, screen empty.
+
+**How to apply:** a breaking change is three handoffs — add the new shape (producer), move every
+consumer, remove the old shape (producer) — never one. `contract_impact.level: breaking` in a single
+handoff is refused by the orchestrator.
+
+### Grep every consumer in the same turn, and prove it
+
+**Why:** consumers pin response shapes in one types file; a rename compiles fine on the producer and
+breaks the consumer at runtime with no error.
+
+**How to apply:** the return block's `contracts_changed[].consumers_grepped` lists `<repo>:<path>`
+for every consumer in `CONTRACTS.md` — including the ones with zero hits. An empty list on a
+non-`none` change is an incomplete return.
+
+### Never ship a consumer that hard-depends on a brand-new producer route
+
+**How to apply:** probe once (a 404/400 tells you whether the route exists) or degrade to the
+previous behaviour, and SAY so on screen when degraded. Self-heals the moment each side deploys.
+
+### Same heading ⇒ same endpoint
+
+**Why:** two consumers rendered the same-titled panel from two different endpoints and showed two
+different answers to one question. Nothing in types, builds or tests catches it.
+
+**How to apply:** before building a panel that mirrors another consumer's panel, open that
+consumer's code and find what it fetches. Record the pairing in `CONTRACTS.md`.
+
+### One brain — logic in the producer, rendering in the consumers
+
+**How to apply:** a consumer that needs derived data asks the producer for an endpoint. Porting the
+computation into a second consumer is a second copy that will drift.
+
+### One session for a whole cross-repo change
+
+**How to apply:** hand the workspace orchestrator the producer edit and every consumer edit together;
+plan first; delegate in contract order. Splitting a cross-repo change across days re-derives the
+decisions per repo.
+
+## What NOT to do
+
+- Don't edit a child from the workspace session (denied by `settings.json`; delegate instead).
+- Don't fan out writes to a producer and its consumer in parallel.
+- Don't carry a production approval from one repo to another.
+- Don't add a contract to the code without adding it to `CONTRACTS.md` in the same handoff.

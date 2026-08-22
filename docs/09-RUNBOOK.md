@@ -72,7 +72,7 @@ In the Claude Code session, ask:
 
 ```
 Based on the codebase scan, propose 3-5 rule files for .claude/rules/.
-For each, list the path globs (applies_to:) and 2-3 hard rules with WHY + HOW TO APPLY.
+For each, list the path globs (paths:) and 2-3 hard rules with WHY + HOW TO APPLY.
 Do not create any rule that's just style preference — only invariants where breaking them caused or could cause a real production issue.
 Wait for my approval before creating any files.
 ```
@@ -201,7 +201,7 @@ Every 3 months, dedicate a session to:
 - **Don't try to make every rule perfect on day 1.** Ship 5 rules; add 1 per month as production teaches you.
 - **Don't over-specialize.** 6-8 specialists is plenty. Splitting too narrowly creates routing confusion.
 - **Don't write canonical docs from scratch in this framework.** Use what you already have. The framework adds the orientation/router layer on top.
-- **Don't manually merge agent files when adding a rule.** Always edit the rule file; agents reference it via `applies_to`.
+- **Don't manually merge agent files when adding a rule.** Always edit the rule file; agents reference it via `paths`.
 
 ## When to stop and ask
 

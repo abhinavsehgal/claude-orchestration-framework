@@ -1,6 +1,8 @@
 # 08 — Common Pitfalls
 
-Seventeen hard-won lessons from real-world adoption. Read this before bootstrapping a project.
+Twenty-six hard-won lessons from real-world adoption. Read this before bootstrapping a project.
+
+> Pitfalls 1–17 date from v1.0/v1.1. Pitfalls 18–26 were added in v1.2.0 after three further months of production use; Pitfall 18 also corrects two v1.0 claims that the platform has since made false.
 
 ## Pitfall 1: Making the orchestrator the project default
 
@@ -50,7 +52,7 @@ What is NOT runtime-enforced:
 
 The `Agent(specialist-1, specialist-2, ...)` allowlist on the orchestrator's `tools` field restricts which agents the orchestrator can spawn. **This restriction only takes effect when the orchestrator runs as the main thread** via `claude --agent <orchestrator-name>`.
 
-When the orchestrator is spawned AS a subagent from another session (via the Agent tool), it cannot spawn further subagents at all (subagents do not spawn subagents per Claude Code semantics) — so the allowlist is moot in that mode.
+When the orchestrator is spawned AS a subagent from another session (via the Agent tool), the `Agent(...)` allowlist on its `tools` field is **not** what governs it — the spawning session's permissions are. (v1.0 of this chapter said subagents cannot spawn subagents at all; that is no longer true — see Pitfall 18. Nesting is now allowed to a configurable depth, which makes the allowlist question *more* important, not less.)
 
 When the main session reads CLAUDE.md and acts AS-IF the orchestrator (without `--agent`), the allowlist has no enforcement at all.
 
@@ -213,7 +215,7 @@ A 2000-line CLAUDE.md means:
 - Updates require touching the same file from many directions
 - You lose the ability to scope rules to file paths (everything applies everywhere)
 
-**Right answer:** Refactor a long CLAUDE.md into the framework's tiers. Move per-area gotchas to `.claude/rules/<domain>.md` (with `applies_to` globs). Move orientation to `docs/ai-context/<area>.md`. Move full detail to `docs/<UPPERCASE>.md`. Keep CLAUDE.md as the routing index — golden rules + workflow + tables + cross-links.
+**Right answer:** Refactor a long CLAUDE.md into the framework's tiers. Move per-area gotchas to `.claude/rules/<domain>.md` (with `paths:` globs). Move orientation to `docs/ai-context/<area>.md`. Move full detail to `docs/<UPPERCASE>.md`. Keep CLAUDE.md as the routing index — golden rules + workflow + tables + cross-links.
 
 We did this on a real codebase. The pre-refactor CLAUDE.md was 2,928 lines. The post-refactor one is ~150. Every existing rule survived; nothing was lost. The routing pattern made it dramatically easier for both Claude and humans to navigate.
 
@@ -221,12 +223,12 @@ We did this on a real codebase. The pre-refactor CLAUDE.md was 2,928 lines. The 
 
 If you ran `/init` previously, or your team has been adding to `CLAUDE.md` for months, BOOTSTRAP-PROMPT.md must NOT silently overwrite that work.
 
-**Right answer:** the prompt now includes mandatory pre-flight checks at the top — snapshot to `.claude-pre-bootstrap-backup/`, naming-collision detection, `applies_to:` glob conflict detection, drift detection on existing CLAUDE.md, and a decision gate that STOPS if any pre-flight raised a `<NEEDS USER CONFIRMATION>` flag.
+**Right answer:** the prompt now includes mandatory pre-flight checks at the top — snapshot to `.claude-pre-bootstrap-backup/`, naming-collision detection, `paths:` glob conflict detection, drift detection on existing CLAUDE.md, and a decision gate that STOPS if any pre-flight raised a `<NEEDS USER CONFIRMATION>` flag.
 
 **Specific risks:**
 - Existing `CLAUDE.md` with team rules → Pre-flight 4 (drift detection) flags stale content; Step 9 (merge step) shows a 3-pane diff before writing.
 - Existing `.claude/agents/<name>.md` with same name as a proposed specialist → Pre-flight 2 (naming collision check) STOPS for explicit user decision per file.
-- Existing `.claude/rules/` with overlapping `applies_to:` → Pre-flight 3 detects glob overlap; both rule files would be referenced creating contradictory guidance.
+- Existing `.claude/rules/` with overlapping `paths:` → Pre-flight 3 detects glob overlap; both rule files would be referenced creating contradictory guidance.
 - Existing `.claude/agents/` with personas that overlap proposed specialists → Pre-flight 5 surfaces the parallel system; user decides migrate vs coexist.
 
 **The pre-flight workflow is non-optional** — even on apparent greenfield projects, run it. Cost is 30 seconds; benefit is never silently destroying team work.
@@ -246,3 +248,133 @@ This is the single most surprising property of hook deployment. We watched a ses
 If you're shipping hooks in a PR, write the verification recipe into the PR description so reviewers don't have to re-derive it. The `templates/hooks/HOOKS.md.template` includes a "Verifying hooks are live" section that's safe to copy to your project's `docs/ai-context/HOOKS.md`.
 
 A side effect of this: never auto-merge a PR that adds hooks. The author should restart their session and verify before approving.
+
+## Pitfall 18: The platform moves under your conventions — re-verify the docs every quarter
+
+Two claims this framework made in v1.0 became false within three months, and a third convention
+became redundant:
+
+- **"Subagents cannot spawn subagents."** They can — by default up to three layers below the main
+  conversation (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` changes it; at the limit the `Agent` tool is
+  withheld). The framework's *design* choice — specialists return `recommended_next_agent` rather
+  than chaining — still stands, because a flat tree is auditable and a deep one is not. But it is a
+  choice now, not a platform limit, and an orchestrator that nests must carry the handoff schema
+  across every hop.
+- **"Rules need a custom `applies_to:` convention plus a hook."** `.claude/rules/*.md` with a
+  `paths:` frontmatter field is native. Rules without `paths:` load at launch; rules with it load
+  when Claude *reads* a matching file; nested `.claude/rules/` in subdirectories load on demand;
+  symlinked rule files are supported. The framework's rule template now uses `paths:`. The
+  rule-surfacing hook (Pattern 1) survives for one gap only — a brand-new file that is *written*
+  without ever being *read* matches no `paths:` rule — and reads the same field.
+- **Dynamic workflows.** Script-driven fan-out of many subagents (`agent()` / `parallel()` /
+  `pipeline()`) is a documented feature, triggered by the `ultracode` keyword. It does not replace the
+  orchestrator (it is for repeatable, many-agent sweeps), but an orchestrator that needs twenty
+  parallel readers should use it rather than hand-spawning.
+
+**Right answer:** every framework claim about the platform carries a *verified-on* date. The
+REFINEMENT prompt now includes a "platform drift" pass: re-read the subagents, memory, hooks and
+headless pages and diff them against Chapters 3, 5, 6, 10 and 12. Treat a claim older than a quarter
+as `documented-unverified` (Chapter 11) until re-checked.
+
+## Pitfall 19: A rule file is a claim, not evidence
+
+A rule file documented the wrong HTTP verb for a route. Three agents trusted it, shipped a client
+that called the wrong verb, and every user of that flow saw a generic "check your connection"
+message for a week. The fourth agent read the route's `export` line.
+
+Rules are written by people and agents at a point in time. They rot like any other document — faster,
+because they are short and confident.
+
+**Right answer:** a rule is `documented-unverified` until you have looked at the thing it describes.
+Before *relying* on a documented fact to build something, check it at the source (the route, the
+schema, the config). When a rule is found wrong, fix it in the same turn — never leave a known-false
+rule standing because "it's not my task".
+
+## Pitfall 20: Deferred work that lives only in prose vanishes
+
+"We'll do the retry logic in a follow-up" was said at the end of a session. No follow-up happened.
+Two weeks later the missing retry was reported as a bug, investigated from scratch, and fixed — with
+none of the context the first session had.
+
+**Right answer:** a turn that names deferred work may not end until that work is appended to
+`docs/<AREA>_BACKLOG.md` with what / why / effort / revisit-when (Chapter 11). The backlog id is
+checked against the remote and open PRs first — two concurrent sessions took the same id on the same
+day. Verbal follow-ups are not follow-ups.
+
+## Pitfall 21: A production push that does not freshen the docs strands the next agent
+
+A feature went to production on Tuesday. Its orientation map still described it as staging-only
+behind a flag. On Thursday a fresh agent "enabled" it — and re-opened a migration that had already
+been applied.
+
+**Right answer:** every production push updates the full doc set *in the same turn*:
+`docs/CHANGELOG.md` (the anchor), the affected orientation maps, the affected rules, and
+`PROJECT.md` §3 if the production *state* changed. Documentation discipline missed this about one
+push in five; it is now a Stop hook (`doc-freshness-gate`, Chapter 10 Pattern 5). A future agent sees
+only what is in git.
+
+## Pitfall 22: Correction-capture regexes false-fire on benign phrases — and the cost is trust
+
+The correction-capture hook (Pattern 2) fired on *"You already have access to it"* — a perfectly
+polite sentence — because its regex matched `you already`. It also fired on a test plan that
+*quoted* a correction phrase, and on a framework doc that *explained* the hook.
+
+**Right answer:** three guards, all now in the template. (1) Anchor the frustration verbs to what
+follows them (`you already (did|changed|broke)`), never bare. (2) Strip code fences, inline code and
+heredoc bodies before matching — quoted text is data, not a correction. (3) Keep the loop guard
+(`stop_hook_active`) so a false fire costs one reply ("not a correction"), never a trapped session.
+When a false fire does happen, tighten the pattern the same day; a hook that cries wolf gets disabled
+by the team within a week.
+
+## Pitfall 23: A killed check is inconclusive, not failed
+
+The build-gate Stop hook capped the build at five minutes. On a machine also running two other
+builds, a legitimate four-minute build was killed every time — and reported as *failed*, with a
+warnings-only tail the agent then tried to "fix". An alarm loop with nothing to fix.
+
+**Right answer:** distinguish `status === null` (killed by timeout or signal) from a non-zero exit.
+A killed run has produced **no failure evidence**; exit 0 silently and let CI (which builds every PR
+anyway) be the authority. Only a real non-zero exit blocks the stop. Size the cap to the slowest
+honest build on a busy machine, not to the fastest one on an idle machine.
+
+## Pitfall 24: Many sessions, one working directory
+
+Three agent sessions shared one checkout. One was launched into a stale, detached snapshot of the
+tree and "fixed" code that had already been rewritten. Two ran `npm run build` at once and corrupted
+each other's output directory — every route 500'd with an error that read like a code bug and was
+pure directory collision. Two picked the same migration number.
+
+**Right answer:** `git fetch` and compare to the remote base *before the first edit* — the tree you
+were launched in is not trustworthy. Do feature work in an isolated worktree branched from the
+fresh-fetched base (`claude --worktree` creates one; symlink the dependency directory rather than
+duplicating it). Never run a build and a dev server in the same directory at once. Before taking any
+sequential id (migration number, backlog id, schema version), check the remote *and* other sessions'
+open PRs.
+
+## Pitfall 25: Never report a negative from a reader you have not verified can see the whole set
+
+"The generator refused these 336 skills" turned out to mean "the reader that listed the skills was
+silently capped at 1,000 rows and never showed the generator 25% of them." A confident negative
+result, wrong, because the *reader* had a ceiling nobody checked.
+
+Most data-access layers cap a bare query (ORMs, REST layers, search APIs — 1,000 is a common
+default), and an explicit `limit` above the cap often does not raise it. No error, no truncation
+flag.
+
+**Right answer:** before reporting "none found", "it refused", or "zero exist", establish the reader's
+ceiling. Page with a stable order, aggregate in the database, or use a count query. A capped read is
+worse than a failed one: it looks like a confident answer.
+
+## Pitfall 26: Two words for one thing ships bugs
+
+The same concept was called `domain` in the database, `topic` on one component and `chapter` on the
+page — and `topic` *already meant something else* in a legacy subsystem. A gate took the new
+meaning, looked it up where the old meaning lived, matched nothing, and an empty match silently
+widened a filter to the whole dataset. Every user of that gate got off-target results for a day.
+
+Vocabulary drift is not cosmetic. It is how a correct-looking lookup returns the wrong set.
+
+**Right answer:** one glossary (`docs/ai-context/GLOSSARY.md` — a rule file, not a nicety) naming
+each concept exactly once, with the DB column, the type field and the UI label that carry it. Adding
+a fifth name for an existing concept is a defect. Rename only while already editing the file that
+carries the wrong name, and say so in the commit.

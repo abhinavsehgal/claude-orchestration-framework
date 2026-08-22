@@ -26,9 +26,12 @@ import { readFileSync, existsSync } from "node:fs";
 const GOLDEN_RULE_REF = "CLAUDE.md golden rule §9";
 
 const STRONG_CORRECTION_PATTERNS = [
-  /\b(that'?s|you'?re|this is)\s+(wrong|incorrect|not\s+right|not\s+correct)\b/i,
+  /\b(that'?s|that\s+is|you'?re|this is)\s+(wrong|incorrect|not\s+right|not\s+correct)\b/i,
   /\bnot\s+(what|how)\s+I\s+(asked|wanted|said)\b/i,
-  /\byou\s+(forgot|missed|skipped|ignored|already)\b/i,
+  /\byou\s+(forgot|missed|skipped|ignored)\b/i,
+  // 'you already' is anchored to a past-tense verb: bare `you already` matched the
+  // benign "you already have access to it" (Rule 11, Pitfall 22).
+  /\byou\s+already\s+(did|changed|broke|said|told|made|wrote|removed|deleted)\b/i,
   /\b(I|i)\s+(just|already)\s+(told|said|asked)\s+you\b/i,
   /\b(I|i)\s+told\s+you\s+(not\s+to|to\s+not)\b/i,
   /\b(stop|don'?t)\s+(doing|using|writing|making|creating)\b/i,

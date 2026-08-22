@@ -1,5 +1,5 @@
 {
-  "_comment": "Sample wiring for all four hook patterns. Merge into .claude/settings.json (the team-shared file, NOT settings.local.json). Stop array order matters — correction-capture before build-gate so the lighter check runs first.",
+  "_comment": "Sample wiring for all five hook patterns. Merge into .claude/settings.json (the team-shared file, NOT settings.local.json). Stop array order matters — correction-capture (light) before build-gate (slow) before doc-freshness-gate; the first to exit 2 wins the cycle.",
   "hooks": {
     "PreToolUse": [
       {
@@ -34,6 +34,10 @@
           {
             "type": "command",
             "command": "node .claude/scripts/build-gate.mjs"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/scripts/doc-freshness-gate.mjs"
           }
         ]
       }

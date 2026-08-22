@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Framework return block (docs/ai-context/HANDOFF_SCHEMA.md) as structured output for `claude -p --json-schema`",
+  "type": "object",
+  "required": ["schema_version", "handoff_id", "from_agent", "to_agent", "status", "verified_claims", "rejected_claims", "unverified_claims", "evidence_used", "files_changed", "tests_run", "risks", "recommended_next_agent", "do_not_pass_downstream_without_verification"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "handoff_id": { "type": "string" },
+    "from_agent": { "type": "string" },
+    "to_agent": { "type": "string" },
+    "status": { "type": "string", "enum": ["completed", "blocked", "needs_clarification", "claim_rejected"] },
+    "verified_claims": { "type": "array", "items": { "type": "object", "required": ["claim", "evidence"], "properties": { "claim": { "type": "string" }, "evidence": { "type": "string" } } } },
+    "rejected_claims": { "type": "array", "items": { "type": "object", "required": ["claim", "evidence"], "properties": { "claim": { "type": "string" }, "evidence": { "type": "string" } } } },
+    "unverified_claims": { "type": "array", "items": { "type": "object", "required": ["claim", "reason"], "properties": { "claim": { "type": "string" }, "reason": { "type": "string" } } } },
+    "evidence_used": { "type": "array", "items": { "type": "string" } },
+    "files_changed": { "type": "array", "items": { "type": "string" } },
+    "tests_run": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "recommended_next_agent": { "type": "object", "required": ["agent", "why"], "properties": { "agent": { "type": "string" }, "why": { "type": "string" } } },
+    "do_not_pass_downstream_without_verification": { "type": "array", "items": { "type": "string" } },
+    "contracts_changed": { "type": "array", "items": { "type": "object", "required": ["contract", "change", "backward_compatible", "consumers_grepped"], "properties": { "contract": { "type": "string" }, "change": { "type": "string" }, "backward_compatible": { "type": "boolean" }, "consumers_grepped": { "type": "array", "items": { "type": "string" } } } } },
+    "deferred_work": { "type": "array", "items": { "type": "object", "required": ["item", "backlog_path"], "properties": { "item": { "type": "string" }, "backlog_path": { "type": "string" } } } }
+  }
+}

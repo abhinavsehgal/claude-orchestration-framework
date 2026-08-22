@@ -1,8 +1,10 @@
 # Claude Orchestration Framework
 
-> **Version 1.1.2** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack agnostic
+> **Version 1.2.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
 >
-> ⚠ **Adopters of v1.1.0 should upgrade to v1.1.2.** v1.1.0 had a silent delivery failure in `templates/hooks/correction-capture-prompt.mjs.template` and `templates/hooks/build-gate.mjs.template` — Stop hook reminders were written to stdout, but Claude Code only surfaces stderr from Stop hooks. v1.1.2 fixes the IO channel. See [CHANGELOG.md](CHANGELOG.md#112--2026-05-06).
+> **v1.2.0 (2026-08-22) — three months of production use, folded back in.** Two new chapters: **11 — Project truth, learnings and the evidence ladder** (the docs a fresh agent reads first, the six-gate playbook, "deferred work must be written", "every production push freshens the docs") and **12 — Multi-repo workspaces** (web + mobile + microservices in separate repos: three layers, two delegation mechanisms, `templates/workspace/`). Nine new pitfalls. A fifth hook (doc-freshness gate). **And two v1.0 platform claims corrected:** subagents *can* nest now, and `.claude/rules/` with `paths:` frontmatter is native — the framework's `applies_to:` field is renamed `paths:` (the hook reads both). Every platform claim in v1.2.0 carries a verified-on date.
+>
+> ⚠ Adopters of v1.1.0 should be on ≥ v1.1.2 (Stop-hook stderr fix). v1.2.0 is additive on top.
 >
 > **Purpose.** A reusable multi-agent orchestration setup for [Claude Code](https://docs.claude.com/en/docs/claude-code) that prevents cascading hallucinations, enforces evidence-based handoffs between agents, and makes Claude usable on production codebases by teams. Tech-stack agnostic — drops into any project (web, mobile, backend, ML, infra) in 2-4 hours.
 
@@ -46,7 +48,9 @@ claude-orchestration-framework/
 │   ├── 07-FOLDER-STRUCTURE.md           ← three-tier doc organization
 │   ├── 08-COMMON-PITFALLS.md            ← 17 hard-won lessons
 │   ├── 09-RUNBOOK.md                    ← step-by-step bootstrap (~2-4 hours)
-│   └── 10-HOOK-HARDENING.md             ← (v1.1) optional hook-based enforcement when documentation discipline isn't enough
+│   ├── 10-HOOK-HARDENING.md             ← (v1.1) optional hook-based enforcement — five patterns as of v1.2
+│   ├── 11-PROJECT-TRUTH-AND-LEARNINGS.md← (v1.2) PROJECT.md / LEARNINGS.md / backlogs, the evidence ladder, the six-gate playbook
+│   └── 12-MULTI-REPO-WORKSPACES.md      ← (v1.2) web + mobile + microservices across repos: layers, delegation, contracts
 │
 ├── prompts/                             ← ready-to-paste prompts for Claude Code
 │   ├── INVENTORY-PROMPT.md              ← scan + propose specialists (run first)
@@ -54,6 +58,12 @@ claude-orchestration-framework/
 │   └── REFINEMENT-PROMPT.md             ← post-bootstrap hardening (run after 2-3 real tasks)
 │
 └── templates/                           ← drop-in templates with placeholders
+    ├── CLAUDE.md.template               ← (v1.2) the root router, golden rules 1–13
+    ├── PROJECT.md.template              ← (v1.2) current truth — what is live where
+    ├── LEARNINGS.md.template            ← (v1.2) decisions / failures / bug patterns / corrections
+    ├── BACKLOG.md.template              ← (v1.2) deferred work, written not spoken
+    ├── GLOSSARY.md.template             ← (v1.2) one name per concept
+    ├── engineering-playbook-skill.md.template ← (v1.2) six gates + evidence ladder
     ├── orchestrator-agent.md.template
     ├── specialist-agent.md.template
     ├── review-only-agent.md.template
@@ -64,13 +74,19 @@ claude-orchestration-framework/
     ├── skill.md.template
     ├── archive-README.md.template
     ├── slash-command.md.template        ← (v1.1) /<command>-style slash command
-    └── hooks/                            ← (v1.1) optional hook-based hardening
-        ├── surface-matching-rules.mjs.template      ← Pattern 1: PreToolUse rule-surfacing
-        ├── correction-capture-prompt.mjs.template   ← Pattern 2: Stop correction-capture
-        ├── build-gate.mjs.template                  ← Pattern 3: Stop build-gate
-        ├── lint-fix.mjs.template                    ← Pattern 4: PostToolUse lint-fix
-        ├── settings.json.snippet                    ← sample wiring for all four
-        └── HOOKS.md.template                        ← orientation note for docs/ai-context/HOOKS.md
+    ├── hooks/                            ← (v1.1) optional hook-based hardening
+    │   ├── surface-matching-rules.mjs.template      ← Pattern 1: PreToolUse rule-surfacing (reads native `paths:`)
+    │   ├── correction-capture-prompt.mjs.template   ← Pattern 2: Stop correction-capture
+    │   ├── build-gate.mjs.template                  ← Pattern 3: Stop build-gate (killed build = inconclusive)
+    │   ├── lint-fix.mjs.template                    ← Pattern 4: PostToolUse lint-fix
+    │   ├── doc-freshness-gate.mjs.template          ← (v1.2) Pattern 5: production push ⇒ docs freshened
+    │   ├── settings.json.snippet                    ← sample wiring for all five
+    │   └── HOOKS.md.template                        ← orientation note for docs/ai-context/HOOKS.md
+    └── workspace/                        ← (v1.2) the multi-repo layer (Chapter 12)
+        ├── CLAUDE.md.template · workspace.json.template · gitignore.template
+        ├── orchestrator-agent.md.template · contract-guardian-agent.md.template · service-mapper-agent.md.template
+        ├── cross-repo-contracts.md.template · SERVICE_MAP.md.template · CONTRACTS.md.template
+        └── sync-repos.sh.template · delegate.sh.template · return-schema.json · settings.json.snippet
 ```
 
 ---
@@ -121,7 +137,7 @@ Estimated time: **45 min - 1 hour**.
 
 - **Pre-flight 1** — auto-snapshot existing config to `.claude-pre-bootstrap-backup/`
 - **Pre-flight 2** — naming-collision check (per file — STOP for explicit user decision)
-- **Pre-flight 3** — `applies_to:` glob conflict check
+- **Pre-flight 3** — `paths:` glob conflict check
 - **Pre-flight 4** — drift detection on existing `CLAUDE.md`
 - **Pre-flight 5** — existing agent style detection
 - **Decision gate** — STOP if any pre-flight raised a `<NEEDS USER CONFIRMATION>` flag
@@ -178,7 +194,7 @@ Estimated time: **2-4 hours** (split across phases — see `docs/09-RUNBOOK.md`)
 
 ### Scenario C — Just want to read the framework
 
-Read the **PDF** (`Claude-Orchestration-Framework.pdf`) — 57 pages, fully self-contained. Or browse the markdown files in `docs/` for clickable cross-links.
+Read the **PDF** (`Claude-Orchestration-Framework.pdf`) — 57 pages, self-contained **as of v1.1.2** (it does not yet include Chapters 11–12; regenerate is tracked in the changelog). Or browse the markdown files in `docs/` for clickable cross-links.
 
 The most actionable single chapter is **`docs/09-RUNBOOK.md`**.
 
@@ -216,19 +232,18 @@ See **`docs/03-AGENTS-GUIDE.md`** for how to pick your specialist list and **`do
 After bootstrapping, the framework needs minimal upkeep:
 
 - **Per task:** rules accumulate naturally as production teaches you new gotchas (add 1-2 per month is normal)
-- **Per quarter:** run `prompts/REFINEMENT-PROMPT.md` to audit specialist scope drift, archive stale docs, and decide if hooks/memory should be added
+- **Per quarter:** run `prompts/REFINEMENT-PROMPT.md` to audit specialist scope drift, archive stale docs, re-check platform drift (Pitfall 18), re-stamp `PROJECT.md`, and decide if hooks should be added
 - **Per major refactor:** the `context-librarian` specialist (if you spawned one) handles docs reorganization
 
 ## Where this came from
 
-Battle-tested on a production K-12 codebase with:
-- 11 specialist agents (frontend, backend, real-time video, payments, security, legal-compliance, QA, DevOps, AI/ML pipeline, product-flow, docs)
-- 7 path-globbed rule files
-- 6 repeatable workflows
-- Three-tier doc organization (~21 orientation maps + 17 canonical refs + frozen archive)
+Battle-tested on a production codebase (as of 2026-08) with:
+- 12 specialist agents, 14 path-scoped rule files, 10 repeatable workflows, 1 slash command, 5 hooks
+- Three-tier doc organization (~21 orientation maps + canonical refs + frozen archive) plus the v1.2 project-truth set (`PROJECT.md`, `LEARNINGS.md`, per-area backlogs, glossary)
 - Bidirectional handoff schema enforced via specialist refusal contracts
+- Two clients (web + mobile) of one backend — the origin of the multi-client parity rules behind Chapter 12
 
-The cascading-hallucination defense (`failure_condition`) and the universal evidence rule are the framework's two biggest novel contributions beyond stock Claude Code.
+The cascading-hallucination defense (`failure_condition`), the universal evidence rule, and (v1.2) the evidence-confidence taxonomy + "deferred work must be written" are the framework's novel contributions beyond stock Claude Code. Everything project-specific was stripped on the way in: if a lesson could not be restated as "any team, any stack, any domain hits this", it stayed out.
 
 ## Frequently asked
 
@@ -243,6 +258,9 @@ The documentation patterns are portable, but `tools` allowlists and subagent iso
 
 **Q: Can I use this on a monorepo?**
 Yes. See `docs/02-ARCHITECTURE.md` § "Variations" for monorepo, multi-product, and mobile+web split patterns.
+
+**Q: We have one repo per microservice plus separate web and mobile repos. Do we need agents at every level, or one top-level orchestrator?**
+Both, in layers — and not a separate framework. Every repo keeps its own install (layer 1); shared specialists become a plugin instead of copies (layer 2); a workspace repo with gitignored clones holds *only* the cross-repo orchestrator, the service map and the contract rules (layer 3), and delegates writes to each child's own orchestrator in the child's own session so the child's hooks still fire. Full design, verified platform behaviour, and a one-afternoon POC recipe: `docs/12-MULTI-REPO-WORKSPACES.md` + `templates/workspace/`.
 
 **Q: I'm worried about leaking sensitive code.**
 The framework doesn't change Claude Code's data handling. Use Claude Code's `permissions.deny` rules for sensitive paths. See `docs/09-RUNBOOK.md` § "What if I'm worried about leaking sensitive code".
