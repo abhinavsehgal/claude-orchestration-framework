@@ -4,7 +4,7 @@ How to design the orchestrator and specialists for your project.
 
 ## The orchestrator
 
-Every project has exactly **one** orchestrator. Naming convention: `<project-name>-orchestrator` (e.g. `acme-orchestrator`, `glowgrades-orchestrator`).
+Every project has exactly **one** orchestrator. Naming convention: `<project-name>-orchestrator` (e.g. `acme-orchestrator`, `payments-orchestrator`).
 
 ### Responsibilities
 
