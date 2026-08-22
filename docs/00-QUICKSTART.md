@@ -391,6 +391,8 @@ lists it.
 
 ## Cross-links
 
+- `docs/00-QUICKSTART.html` — this guide plus the other two editions as one offline page with tabs (open in a browser; generated from the three `00-QUICKSTART.md` files on 2026-08-22).
+
 - `docs/09-RUNBOOK.md` — the long version of Part 2.
 - `docs/10-HOOK-HARDENING.md` — hooks (Part 2 step 7).
 - `docs/12-MULTI-REPO-WORKSPACES.md` — the long version of Part 3, with the verified platform behaviour behind every step.
