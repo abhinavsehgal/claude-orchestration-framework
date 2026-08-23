@@ -17,17 +17,34 @@
 import { readFileSync } from "node:fs";
 import { resolve, isAbsolute } from "node:path";
 import { homedir } from "node:os";
+import { spawnSync } from "node:child_process";
 
 // ---- Customise ---------------------------------------------------------------
 const PROTECTED_BRANCH = "<PROTECTED_BRANCH>";        // e.g. "main", "production", "release"
 const CHANGELOG_PATH = "<CHANGELOG_PATH>";            // e.g. "docs/CHANGELOG.md", "CHANGELOG.md"
-const STATE_DOC_PATH = "<STATE_DOC_PATH>";            // e.g. "docs/ai-context/PROJECT.md" (named in the reminder only)
+const STATE_DOC_PATH = "<STATE_DOC_PATH>";
+// A release entry written BEFORE the push (the common promote ritual: changelog → integration
+// branch → promote) ships inside the promote merge, so no edit follows the push. The gate also
+// accepts a same-day release heading in the changelog. Regex receives today's date as YYYY-MM-DD.
+const RELEASE_HEADING_RE = (today) => new RegExp(`^## \\[prod\\][^\\n]*\\b${today}\\b`, "m"); // <CUSTOMISE to your changelog's release-heading shape>            // e.g. "docs/ai-context/PROJECT.md" (named in the reminder only)
 // <REPO_NAME_FRAGMENT>: a substring of this repo's GitHub name (e.g. "acme-api") so a
 // `gh pr merge --repo other/thing` in this session is not mistaken for OUR merge.
 // ------------------------------------------------------------------------------
 
 function readStdin() {
   try { return readFileSync(0, "utf8"); } catch { return ""; }
+}
+
+// Same-day release heading in the changelog at <PROTECTED_BRANCH> (if fetched) or the working tree.
+function changelogHasTodaysEntry(repoRoot) {
+  try {
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const re = RELEASE_HEADING_RE(today);
+    const pushed = spawnSync("git", ["-C", repoRoot, "show", `origin/${PROTECTED_BRANCH}:${CHANGELOG_PATH}`], { encoding: "utf8", timeout: 5000 });
+    if (pushed.status === 0 && re.test(pushed.stdout)) return true;
+    return re.test(readFileSync(resolve(repoRoot, CHANGELOG_PATH), "utf8"));
+  } catch { return false; }
 }
 
 function main() {
@@ -120,6 +137,7 @@ function main() {
 
   if (lastPushIdx === -1) process.exit(0);            // no production push this session
   if (lastChangelogIdx > lastPushIdx) process.exit(0); // docs freshened after the push
+  if (changelogHasTodaysEntry(REPO_ROOT)) process.exit(0); // …or the entry shipped inside the promote (Rule 13)
 
   const reminder = `<system-reminder>
 DOC-FRESHNESS GATE — a production push (a change landing on \`${PROTECTED_BRANCH}\`) happened this session, but the docs were not freshened afterwards.

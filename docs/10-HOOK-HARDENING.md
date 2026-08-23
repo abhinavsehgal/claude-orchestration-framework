@@ -150,6 +150,16 @@ When writing a new hook:
 
 Hook entries added to `.claude/settings.json` mid-session do **not** activate until a new session starts. This is the most surprising fact about hook deployment. After installing hooks: `/exit` and re-run `claude` for them to take effect. Verify in a brand-new session, not the one that installed them.
 
+### Rule 13 — Content beats ordering: accept a release entry that shipped inside the promote
+
+Many teams write the changelog entry FIRST (changelog → integration branch → promote), so the entry
+travels inside the promote merge and no changelog edit follows the push in the transcript. An
+order-only gate fires on a correctly-freshened promote (it did, 2026-08-22). The doc-freshness gate
+therefore also accepts a same-day release heading in the changelog — read from
+`origin/<PROTECTED_BRANCH>` (the pushed truth, once fetched) or the working tree. Customise
+`RELEASE_HEADING_RE` to your changelog's heading shape; a heading for another environment or a stale
+date must not match.
+
 ### Rule 8 — Team-shared hooks live in `.claude/settings.json`, not `.claude/settings.local.json`
 
 `.local.json` is per-machine (gitignored). Hooks meant to enforce team rules belong in the shared `settings.json` so every contributor and CI run gets them. Leave `.local.json` for personal MCP allowlists.
