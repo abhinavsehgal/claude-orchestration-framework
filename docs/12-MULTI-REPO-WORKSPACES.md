@@ -266,6 +266,28 @@ These are the multi-client parity rules from Chapter 11, applied across reposito
 branch (each child's team owns that). `delegate.sh` reads `path`, `orchestrator` and `build` from
 here so the orchestrator prompt never hard-codes a path.
 
+## Scheduled workspace routines — the contract guardian gets a clock
+
+Layer 3 as specified above is reactive: the contract guardian blocks a bad handoff *when a session
+runs one*. But agent-era defects concentrate at the seams between repos — a contract changed in the
+producer and never propagated is invisible to every per-repo session until something breaks. Seams
+are exactly where standing routines (Chapter 13) pay off first:
+
+- **contract-drift-daily** — re-derive each contract's consumer list from the child clones and diff
+  reality against `CONTRACTS.md` + `SERVICE_MAP.md`; open a workspace PR (or per-repo issues) on
+  divergence. This is `contract-guardian-agent` run on a schedule instead of on demand — same
+  charter, same REVIEW-ONLY posture, plus the routine output contract.
+- **service-map-freshener** — re-verify `SERVICE_MAP.md` rows (routes, owners, deploy targets)
+  against the clones; a stale row gets a dated PR, not silent tolerance (Chapter 11's freshness
+  contract, applied cross-repo).
+- **workspace janitor** — prune stale clones/worktrees and re-sync from the manifest
+  (`sync-repos.sh`), so delegation never runs against a repo state nobody chose.
+
+Routine writes follow the same delegation rule as everything else in this chapter: a routine that
+must *change* a child repo delegates to that child's own session so the child's hooks fire; the
+workspace-level routine itself stays read-only plus reports. Conventions, budgets and the catalog:
+`docs/13-STANDING-ROUTINES.md`.
+
 ## What NOT to do
 
 - **Don't put the specialists in the workspace repo.** They belong with the code they edit, or in
@@ -319,3 +341,4 @@ here so the orchestrator prompt never hard-codes a path.
 - Official references (verified 2026-08-22): *Set up Claude Code in a monorepo or large codebase*,
   *Subagents → Let subagents spawn their own subagents*, *Run Claude Code programmatically*,
   *Memory → Load from additional directories*.
+- `docs/13-STANDING-ROUTINES.md` — the routine conventions the scheduled layer above relies on.

@@ -1,6 +1,8 @@
 # Claude Orchestration Framework
 
-> **Version 1.2.1** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
+> **Version 1.3.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
+>
+> **v1.3.0 (2026-08-24) — the third leg: scheduled autonomy.** New chapter **13 — Standing Routines**: narrow agent jobs on a schedule that open small PRs behind review gates — one charter per routine, repro + truth table on every fix, noise budgets, wrong output tunes the *routine*, attempt caps + a verified retire path. Ships `templates/routine.md.template` and a hill-climb skill template ("iterate on X with a measurement until it hits Y"). Chapter 12 gains scheduled workspace routines (the contract guardian on a clock). Two new pitfalls — a context system is a program (bisect with `--safe-mode`, weigh with `/usage`), and unattended jobs need a verified retire path — plus REFINEMENT checks 10–11. Distilled from the Claude Code team's public maintenance-fleet practice (Aug 2026: 388 PRs opened, 180 merged).
 >
 > **v1.2.0 (2026-08-22) — three months of production use, folded back in.** Two new chapters: **11 — Project truth, learnings and the evidence ladder** (the docs a fresh agent reads first, the six-gate playbook, "deferred work must be written", "every production push freshens the docs") and **12 — Multi-repo workspaces** (web + mobile + microservices in separate repos: three layers, two delegation mechanisms, `templates/workspace/`). Nine new pitfalls. A fifth hook (doc-freshness gate). **And two v1.0 platform claims corrected:** subagents *can* nest now, and `.claude/rules/` with `paths:` frontmatter is native — the framework's `applies_to:` field is renamed `paths:` (the hook reads both). Every platform claim in v1.2.0 carries a verified-on date.
 >
@@ -37,10 +39,10 @@ This framework gives you all of that without runtime hooks or external dependenc
 ```
 claude-orchestration-framework/
 ├── README.md                           ← this file
-├── Claude-Orchestration-Framework.pdf  ← consolidated 57-page printable (v1.1.2 render — Chapters 11–12 not yet included)
+├── Claude-Orchestration-Framework.pdf  ← consolidated 97-page printable (v1.3.0 render — quickstart + all 14 chapters)
 ├── LICENSE
 │
-├── docs/                                ← the framework explained (quickstart + 12 chapters)
+├── docs/                                ← the framework explained (quickstart + 13 chapters)
 │   ├── 00-QUICKSTART.md                 ← START HERE: step-by-step onboarding for any project, incl. many repos
 │   ├── 00-QUICKSTART.html                ← the same guide as one offline page with tabs for all three editions (open in a browser)
 │   │                                    live: https://abhinavsehgal.github.io/claude-orchestration-framework/
@@ -49,13 +51,14 @@ claude-orchestration-framework/
 │   ├── 03-AGENTS-GUIDE.md               ← how to design orchestrator + specialists (per-stack tables)
 │   ├── 04-HANDOFF-SCHEMA.md             ← bidirectional schema + worked examples (web / mobile / REVIEW-ONLY)
 │   ├── 05-RULES-AND-SKILLS.md           ← path-globbed rules + repeatable workflows
-│   ├── 06-INVOCATION-MODES.md           ← claude vs --agent vs specialist vs headless -p vs dynamic workflows
+│   ├── 06-INVOCATION-MODES.md           ← claude vs --agent vs specialist vs headless -p vs dynamic workflows vs routines
 │   ├── 07-FOLDER-STRUCTURE.md           ← three-tier doc organization
-│   ├── 08-COMMON-PITFALLS.md            ← 26 hard-won lessons
+│   ├── 08-COMMON-PITFALLS.md            ← 28 hard-won lessons
 │   ├── 09-RUNBOOK.md                    ← step-by-step bootstrap (~2-4 hours)
 │   ├── 10-HOOK-HARDENING.md             ← (v1.1) optional hook-based enforcement — five patterns as of v1.2
 │   ├── 11-PROJECT-TRUTH-AND-LEARNINGS.md← (v1.2) PROJECT.md / LEARNINGS.md / backlogs, the evidence ladder, the six-gate playbook
-│   └── 12-MULTI-REPO-WORKSPACES.md      ← (v1.2) web + mobile + microservices across repos: layers, delegation, contracts
+│   ├── 12-MULTI-REPO-WORKSPACES.md      ← (v1.2) web + mobile + microservices across repos: layers, delegation, contracts
+│   └── 13-STANDING-ROUTINES.md          ← (v1.3) scheduled autonomy: routine fleets, output contracts, budgets, review gates
 │
 ├── prompts/                             ← ready-to-paste prompts for Claude Code
 │   ├── INVENTORY-PROMPT.md              ← scan + propose specialists (run first)
@@ -79,6 +82,8 @@ claude-orchestration-framework/
     ├── skill.md.template
     ├── archive-README.md.template
     ├── slash-command.md.template        ← (v1.1) /<command>-style slash command
+    ├── routine.md.template              ← (v1.3) standing-routine charter (Chapter 13)
+    ├── hill-climb-skill.md.template     ← (v1.3) metric loop: iterate on X until it hits Y
     ├── hooks/                            ← (v1.1) optional hook-based hardening
     │   ├── surface-matching-rules.mjs.template      ← Pattern 1: PreToolUse rule-surfacing (reads native `paths:`)
     │   ├── correction-capture-prompt.mjs.template   ← Pattern 2: Stop correction-capture

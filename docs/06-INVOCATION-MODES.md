@@ -1,6 +1,6 @@
 # 06 — Invocation Modes
 
-Five modes coexist by design — the first three are the everyday ones; headless and dynamic workflows are for scripts and sweeps. Pick by task shape, not by habit.
+Six modes coexist by design — the first three are the everyday ones; headless, dynamic workflows and standing routines are for scripts, sweeps and schedules. Pick by task shape, not by habit.
 
 ## Mode 1: Default `claude` (no flags)
 
@@ -61,6 +61,15 @@ Script-driven orchestration — `agent()`, `parallel()`, `pipeline()` — trigge
 migrate 40 call sites, exhaustive research). It complements, not replaces, the orchestrator: the
 orchestrator decides *what* to do and issues schema-bound handoffs; a workflow is how it runs twenty
 of them at once. Budget accordingly — a workflow can spawn dozens of agents.
+
+## Mode 6: Standing routines (scheduled, unattended)
+
+Mode 4 on a clock, with governance. A routine is a narrow charter file executed on a schedule
+(a product scheduler, or CI cron + `claude -p`), producing small PRs behind review gates — never
+direct writes. It is the only mode that runs with nobody watching, which is why it carries the
+strictest output contract in the framework: repro + truth table on every fix-PR, one reporting
+channel, budgets and attempt caps, and a human on every merge. Full conventions, starter catalog
+and budgets: `docs/13-STANDING-ROUTINES.md`.
 
 ## Why we don't make the orchestrator the default
 
