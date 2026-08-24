@@ -2,6 +2,40 @@
 
 All notable changes to the Claude Orchestration Framework. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] — 2026-08-24
+
+### Added — the third leg: scheduled autonomy
+
+- **`docs/13-STANDING-ROUTINES.md`** — standing routines: narrow agent jobs on a schedule, producing
+  small PRs behind review gates. The seven conventions (one charter per routine; PRs only; repro +
+  truth table on every fix; one reporting surface; never self-merge; wrong output tunes the routine,
+  not just the output; attempt caps + a verified retire path), model/effort tiering, a starter
+  catalog (dead-code remover with the log-before-delete step, dup unifier, flaky-test root-causer,
+  doc-drift checker, crash fuzzer, workspace janitor, hill-climber), and the three run mechanisms
+  (product scheduler / CI cron + headless `claude -p`, which runs the cwd's hooks — verified
+  2026-08-22 / chat-channel agent). Distilled from the Claude Code team's public maintenance-fleet
+  practice (Aug 2026: 388 PRs opened, 180 merged, ~1-in-50 noise), restated stack- and
+  domain-agnostically.
+- **`templates/routine.md.template`** — the checked-in routine charter: scope, schedule + kill
+  switch, output contract, reporting, gates, budgets/caps with a CHECKED completion write, noise
+  budget, append-only tuning log.
+- **`templates/hill-climb-skill.md.template`** — the metric-loop skill: "iterate on X with a
+  measurement and a dataset until it hits Y" (baseline → one hypothesis per iteration → measure →
+  keep/revert → append-only ratchet file; stop on target / plateau / budget).
+- **Chapter 12 § Scheduled workspace routines** — the contract guardian on a clock
+  (contract-drift-daily, service-map-freshener, workspace janitor); workspace routines stay
+  read-only + reports, child writes still delegate to the child's own session.
+- **Chapter 6 Mode 6** — standing routines as an invocation mode (Mode 4 on a clock, with
+  governance).
+- **Pitfall 27** — a context system is a program: bisect misbehavior with `--safe-mode`, weigh the
+  install with `/usage`, make every rule earn its tokens.
+- **Pitfall 28** — an unattended job without a verified retire path runs forever (the 17-day
+  silent-grinder failure class: completion write's error never read, "ran" reported as "worked").
+- **REFINEMENT checks 10–11** — context weight pass; routine health pass (noise vs budget,
+  tuning-log liveness, caps verified).
+
+---
+
 ## [1.2.1] — 2026-08-22
 
 ### Fixed — same-day audit of v1.2.0 (stale text, contradictions, one runtime defect)

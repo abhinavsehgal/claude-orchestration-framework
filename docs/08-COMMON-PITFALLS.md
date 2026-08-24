@@ -1,8 +1,8 @@
 # 08 — Common Pitfalls
 
-Twenty-six hard-won lessons from real-world adoption. Read this before bootstrapping a project.
+Twenty-eight hard-won lessons from real-world adoption. Read this before bootstrapping a project.
 
-> Pitfalls 1–17 date from v1.0/v1.1. Pitfalls 18–26 were added in v1.2.0 after three further months of production use; Pitfall 18 also corrects two v1.0 claims that the platform has since made false.
+> Pitfalls 1–17 date from v1.0/v1.1. Pitfalls 18–26 were added in v1.2.0 after three further months of production use; Pitfall 18 also corrects two v1.0 claims that the platform has since made false. Pitfalls 27–28 were added in v1.3.0 alongside Chapter 13 (standing routines).
 
 ## Pitfall 1: Making the orchestrator the project default
 
@@ -378,3 +378,33 @@ Vocabulary drift is not cosmetic. It is how a correct-looking lookup returns the
 each concept exactly once, with the DB column, the type field and the UI label that carry it. Adding
 a fifth name for an existing concept is a defect. Rename only while already editing the file that
 carries the wrong name, and say so in the commit.
+
+## Pitfall 27: A context system is a program — profile it and bisect it
+
+The rules, router and hooks you build with this framework are injected into sessions as tokens, and
+token cost compounds invisibly: a mature install can front-load thousands of lines into every
+session and nobody notices until the bill or the drift does. Worse, misbehavior gets misattributed —
+when the agent rabbit-holes or fixates, teams blame the model while a stale rule or an over-broad
+skill is doing the steering.
+
+**Right answer:** treat context like code, with two operational habits. **Bisect:** reproduce the
+misbehavior with project context disabled (`claude --safe-mode`); if it disappears, the fault is in
+your CLAUDE.md/rules/skills — find it by re-enabling halves. **Weigh:** once a quarter, measure what
+the install injects per session (`/usage` breaks down where tokens go; runaway loops, extreme
+parallelism and one inefficient skill are the usual culprits) and make every rule earn its tokens —
+REFINEMENT check 10 makes this a standing pass. A rule that has never changed an outcome is not
+free; it is paid for on every session.
+
+## Pitfall 28: An unattended job without a verified retire path runs forever
+
+A scheduled pipeline ran for 17 days without a single job completing. The completion write violated
+a database CHECK constraint, its error return was never read, the job stayed "running", and a reaper
+re-queued it — so the system burned its full capacity re-doing satisfied work, while every dashboard
+showed green because runs *were happening*. Nothing a person watched distinguished "ran" from
+"worked".
+
+**Right answer:** for any unattended loop (a cron, a queue drainer, a standing routine — Chapter 13):
+the completion write's error is READ, and a failed completion is a loud failure, not a silent retry;
+attempt caps park a grinding job instead of letting it spin; and the reporting surface states what
+was *verified done*, never just that the process exited. "The routine ran" is a claim about the
+scheduler; only the checked completion write is a claim about the work.

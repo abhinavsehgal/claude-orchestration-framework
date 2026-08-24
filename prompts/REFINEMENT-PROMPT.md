@@ -97,6 +97,24 @@ URL that contradicts it.
   archive or delete. Any "later" in recent PR descriptions that never reached a backlog?
 - Glossary: any new name for an existing concept introduced since the last pass?
 
+### 10. Context weight (v1.3.0)
+
+Measure what the install injects per session. Run `/usage` on a representative session (and on any
+long-running loop) and attribute: how much goes to the router + auto-surfaced rules + skills versus
+the task itself? Flag: any rule file that has not changed an outcome since the last pass (candidate
+for trimming or merging), any skill/plugin that dominates the breakdown, any hook that injects a
+whole file where a section would do. If misbehavior was reported this quarter (rabbit-holing,
+fixation), confirm the `--safe-mode` bisection was run (Pitfall 27) before anyone blames the model.
+
+### 11. Routine health (v1.3.0 — only if standing routines are installed)
+
+For each routine charter (Chapter 13): noise rate vs its budget (merged vs closed PRs since the
+last pass); tuning log growing whenever PRs get closed (a closed routine PR with no tuning entry
+means the loop is broken); attempt caps and the checked completion write still in place; budget vs
+actual spend; any routine whose reporting went silent — silence must mean broken, not idle, so
+verify which it was. Propose retiring any routine still over its noise budget after two tuning
+passes.
+
 ## Output format
 
 Produce a structured report:
@@ -140,6 +158,12 @@ Produce a structured report:
 
 ## Project-truth freshness
 [PROJECT.md §3 rows corrected + new verified-on stamp · LEARNINGS §D items to promote · stale backlog items · glossary drift]
+
+## Context weight
+[injection breakdown + rules/skills flagged]
+
+## Routine health
+[per-routine: noise vs budget, tuning-log state, caps verified — or "no routines installed"]
 
 ## Proposed PR
 - Files to update (paths)
