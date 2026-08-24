@@ -1,6 +1,8 @@
 # Claude Orchestration Framework
 
-> **Version 1.2.1** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
+> **Version 1.3.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
+>
+> **v1.3.0 (2026-08-24) — the third leg: scheduled autonomy.** New chapter **13 — Standing Routines**: narrow agent jobs on a schedule that open small PRs behind review gates — one charter per routine, repro + truth table on every fix, noise budgets, wrong output tunes the *routine*, attempt caps + a verified retire path. Ships `templates/routine.md.template` and a hill-climb skill template ("iterate on X with a measurement until it hits Y"). Chapter 12 gains scheduled workspace routines (the contract guardian on a clock). Two new pitfalls — a context system is a program (bisect with `--safe-mode`, weigh with `/usage`), and unattended jobs need a verified retire path — plus REFINEMENT checks 10–11. Distilled from the Claude Code team's public maintenance-fleet practice (Aug 2026: 388 PRs opened, 180 merged).
 >
 > **v1.2.0 (2026-08-22) — three months of production use, folded back in.** Two new chapters: **11 — Project truth, learnings and the evidence ladder** (the docs a fresh agent reads first, the six-gate playbook, "deferred work must be written", "every production push freshens the docs") and **12 — Multi-repo workspaces** (web + mobile + microservices in separate repos: three layers, two delegation mechanisms, `templates/workspace/`). Nine new pitfalls. A fifth hook (doc-freshness gate). **And two v1.0 platform claims corrected:** subagents *can* nest now, and `.claude/rules/` with `paths:` frontmatter is native — the framework's `applies_to:` field is renamed `paths:` (the hook reads both). Every platform claim in v1.2.0 carries a verified-on date.
 >

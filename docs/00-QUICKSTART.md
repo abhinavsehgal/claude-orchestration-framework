@@ -373,6 +373,24 @@ lists it.
 
 ---
 
+## Part 6 · Optional: let it run while you sleep (after two weeks)
+
+Once real tasks have flowed through the framework for a couple of weeks, add your first **standing
+routine** — a narrow agent job on a schedule that opens small PRs behind review gates. The full
+pattern (seven conventions, starter catalog, budgets): `docs/13-STANDING-ROUTINES.md`.
+
+- **What:** copy `templates/routine.md.template` to `docs/routines/<name>.md`, fill the charter,
+  schedule it — a product scheduler, or CI cron running headless `claude -p` inside the repo (the
+  repo's hooks fire).
+- **Why:** maintenance becomes a stream instead of a project. The public reference fleet merged
+  180 routine PRs in a few weeks at ~1-in-50 noise.
+- **Start with ONE of:** doc-drift checker · dead-code remover · flaky-test root-causer (in a
+  workspace: the contract-drift checker — Part 3's guardian on a clock).
+- **The safety rules:** PRs only · never self-merge · per-run budget + attempt caps · a checked
+  completion write · one reporting channel.
+- **You know it worked when:** every run posts to its channel — including "nothing to do" — and
+  the first wrong PR produces a tuning-log entry in the charter, not just a closed PR.
+
 ## The checklist (print this)
 
 **Per person, once**
@@ -401,7 +419,7 @@ lists it.
 
 ## Cross-links
 
-- https://abhinavsehgal.github.io/claude-orchestration-framework/ (GitHub Pages) or `docs/00-QUICKSTART.html` offline — this guide plus the other two editions as one page with tabs (open in a browser; generated from the three `00-QUICKSTART.md` files on 2026-08-22).
+- https://abhinavsehgal.github.io/claude-orchestration-framework/ (GitHub Pages) or `docs/00-QUICKSTART.html` offline — this guide plus the other two editions as one page with tabs (open in a browser; generated from the three `00-QUICKSTART.md` files on 2026-08-24).
 
 - `docs/09-RUNBOOK.md` — the long version of Part 2.
 - `docs/10-HOOK-HARDENING.md` — hooks (Part 2 step 7).
@@ -409,3 +427,4 @@ lists it.
 - `docs/11-PROJECT-TRUTH-AND-LEARNINGS.md` — why the backlog, `PROJECT.md` and "push = freshen docs" rules exist.
 - `docs/06-INVOCATION-MODES.md` — `claude` vs `--agent` vs `-p` vs worktrees.
 - `docs/08-COMMON-PITFALLS.md` — Part 5, in full.
+- `docs/13-STANDING-ROUTINES.md` + `templates/routine.md.template` — Part 6, in full (scheduled autonomy).
