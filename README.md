@@ -39,7 +39,7 @@ This framework gives you all of that without runtime hooks or external dependenc
 ```
 claude-orchestration-framework/
 ├── README.md                           ← this file
-├── Claude-Orchestration-Framework.pdf  ← consolidated 57-page printable (v1.1.2 render — Chapters 11–12 not yet included)
+├── Claude-Orchestration-Framework.pdf  ← consolidated 97-page printable (v1.3.0 render — quickstart + all 14 chapters)
 ├── LICENSE
 │
 ├── docs/                                ← the framework explained (quickstart + 13 chapters)

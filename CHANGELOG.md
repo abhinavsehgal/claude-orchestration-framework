@@ -33,6 +33,8 @@ All notable changes to the Claude Orchestration Framework. Format follows [Keep 
   silent-grinder failure class: completion write's error never read, "ran" reported as "worked").
 - **REFINEMENT checks 10–11** — context weight pass; routine health pass (noise vs budget,
   tuning-log liveness, caps verified).
+- **PDF regenerated** — `Claude-Orchestration-Framework.pdf` is now the v1.3.0 render (97 pages:
+  quickstart + all 14 chapters), closing the "still the v1.1.2 render" gap tracked since v1.2.0.
 
 ---
 
