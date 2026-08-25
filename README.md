@@ -1,6 +1,6 @@
 # Claude Orchestration Framework
 
-> **Version 1.3.0** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
+> **Version 1.3.1** ([changelog](CHANGELOG.md)) · MIT license · `templates/` + `docs/` are tech-stack and domain agnostic
 >
 > **v1.3.0 (2026-08-24) — the third leg: scheduled autonomy.** New chapter **13 — Standing Routines**: narrow agent jobs on a schedule that open small PRs behind review gates — one charter per routine, repro + truth table on every fix, noise budgets, wrong output tunes the *routine*, attempt caps + a verified retire path. Ships `templates/routine.md.template` and a hill-climb skill template ("iterate on X with a measurement until it hits Y"). Chapter 12 gains scheduled workspace routines (the contract guardian on a clock). Two new pitfalls — a context system is a program (bisect with `--safe-mode`, weigh with `/usage`), and unattended jobs need a verified retire path — plus REFINEMENT checks 10–11. Distilled from the Claude Code team's public maintenance-fleet practice (Aug 2026: 388 PRs opened, 180 merged).
 >
@@ -53,7 +53,7 @@ claude-orchestration-framework/
 │   ├── 05-RULES-AND-SKILLS.md           ← path-globbed rules + repeatable workflows
 │   ├── 06-INVOCATION-MODES.md           ← claude vs --agent vs specialist vs headless -p vs dynamic workflows vs routines
 │   ├── 07-FOLDER-STRUCTURE.md           ← three-tier doc organization
-│   ├── 08-COMMON-PITFALLS.md            ← 28 hard-won lessons
+│   ├── 08-COMMON-PITFALLS.md            ← 30 hard-won lessons
 │   ├── 09-RUNBOOK.md                    ← step-by-step bootstrap (~2-4 hours)
 │   ├── 10-HOOK-HARDENING.md             ← (v1.1) optional hook-based enforcement — five patterns as of v1.2
 │   ├── 11-PROJECT-TRUTH-AND-LEARNINGS.md← (v1.2) PROJECT.md / LEARNINGS.md / backlogs, the evidence ladder, the six-gate playbook

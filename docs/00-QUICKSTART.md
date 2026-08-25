@@ -361,7 +361,7 @@ lists it.
 | You see | It usually means | Fix |
 |---|---|---|
 | The agent isn't in `/agents` | Wrong folder or frontmatter | Must be in `.claude/agents/`; `name:` must match; valid YAML between the `---` lines. Restart the session. |
-| A rule never shows up | Its `paths:` glob doesn't match, or the file was never *read* | Run `find . -path "<the glob>"`. Rules load when Claude reads a matching file; a brand-new file written blind matches nothing — that is what the optional rule-surfacing hook covers. |
+| A rule never shows up | Its `paths:` glob doesn't match, or the file was never *read* | Run `node scripts/verify-rule-globs.mjs` — a glob with an unescaped `[id]` or `(group)` matches NOTHING (Pitfall 30). Rules load when Claude reads a matching file; a brand-new file written blind matches nothing — that is what the optional rule-surfacing hook covers. |
 | From the workspace, the children's agents are missing | By design | Children are reached through `delegate.sh`. To spawn a child's agents in-session (investigation only), start with `claude --add-dir <child>`. |
 | `delegate.sh` exits with "handoff does not carry repo:" | The handoff file is missing its `repo:` line | Add `repo: <name>` exactly as in `workspace.json`. A note for one repo must never run in another. |
 | `delegate.sh` hangs or asks nothing and fails | `-p` never prompts; a tool wasn't pre-approved | Widen `delegation.allowed_tools` in `workspace.json` *one tool at a time*; check the child's result JSON under `.claude/returns/`. |
