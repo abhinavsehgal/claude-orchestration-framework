@@ -419,7 +419,7 @@ pattern (seven conventions, starter catalog, budgets): `docs/13-STANDING-ROUTINE
 
 ## Cross-links
 
-- https://abhinavsehgal.github.io/claude-orchestration-framework/ (GitHub Pages) or `docs/00-QUICKSTART.html` offline — this guide plus the other two editions as one page with tabs (open in a browser; generated from the three `00-QUICKSTART.md` files on 2026-08-24).
+- https://abhinavsehgal.github.io/claude-orchestration-framework/ (GitHub Pages) or `docs/00-QUICKSTART.html` offline — this guide plus the other two editions as one page with tabs (open in a browser; generated from the three `00-QUICKSTART.md` files — the page footer carries its build date).
 
 - `docs/09-RUNBOOK.md` — the long version of Part 2.
 - `docs/10-HOOK-HARDENING.md` — hooks (Part 2 step 7).
