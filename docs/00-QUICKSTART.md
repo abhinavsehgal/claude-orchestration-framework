@@ -2,7 +2,7 @@
 
 > The whole framework as one step-by-step walk. Every step says **what to do**, **why**, **what to
 > paste**, and **how you know it worked**. Written for someone who has never seen the framework;
-> the long version of each part is linked. Based on v1.2.0 and the Claude Code docs as verified on
+> the long version of each part is linked. Based on v1.3.1 and the Claude Code docs as verified on
 > 2026-08-22 — if a step here disagrees with the chapter it links to, the chapter wins.
 >
 > **Time:** 15 min once per person · 2–4 h per repo · one afternoon for the workspace.
